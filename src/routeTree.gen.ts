@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TravelRouteImport } from './routes/travel'
 import { Route as AlertsIdRouteImport } from './routes/alerts.$id'
@@ -29,6 +30,11 @@ const AboutRoute = AboutRouteImport.update({
 const AlertsRoute = AlertsRouteImport.update({
   id: '/alerts',
   path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/alerts': typeof AlertsRouteWithChildren
+  '/news': typeof NewsRoute
   '/privacy': typeof PrivacyRoute
   '/travel': typeof TravelRoute
   '/alerts/$id': typeof AlertsIdRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/alerts': typeof AlertsRouteWithChildren
+  '/news': typeof NewsRoute
   '/privacy': typeof PrivacyRoute
   '/travel': typeof TravelRoute
   '/alerts/$id': typeof AlertsIdRoute
@@ -68,20 +76,36 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/alerts': typeof AlertsRouteWithChildren
+  '/news': typeof NewsRoute
   '/privacy': typeof PrivacyRoute
   '/travel': typeof TravelRoute
   '/alerts/$id': typeof AlertsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/alerts' | '/privacy' | '/travel' | '/alerts/$id'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/alerts'
+    | '/news'
+    | '/privacy'
+    | '/travel'
+    | '/alerts/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/alerts' | '/privacy' | '/travel' | '/alerts/$id'
+  to:
+    | '/'
+    | '/about'
+    | '/alerts'
+    | '/news'
+    | '/privacy'
+    | '/travel'
+    | '/alerts/$id'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/alerts'
+    | '/news'
     | '/privacy'
     | '/travel'
     | '/alerts/$id'
@@ -91,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AlertsRoute: typeof AlertsRouteWithChildren
+  NewsRoute: typeof NewsRoute
   PrivacyRoute: typeof PrivacyRoute
   TravelRoute: typeof TravelRoute
 }
@@ -116,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/alerts'
       fullPath: '/alerts'
       preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -157,6 +189,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AlertsRoute: AlertsRouteWithChildren,
+  NewsRoute: NewsRoute,
   PrivacyRoute: PrivacyRoute,
   TravelRoute: TravelRoute,
 }

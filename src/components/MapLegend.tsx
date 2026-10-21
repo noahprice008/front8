@@ -7,6 +7,7 @@ const DOTS: { key: string; label: string; className: string }[] = [
   { key: "elevated", label: "Info / Low (active alerts)", className: "bg-sev-info map-bubble map-bubble--elevated" },
   { key: "clear", label: "No current alerts", className: "bg-sev-clear map-bubble map-bubble--clear" },
   { key: "unmonitored", label: "Not yet monitored", className: "map-bubble map-bubble--unmonitored" },
+  { key: "developing", label: "Developing report: single source, not yet confirmed", className: "map-legend-dev" },
 ];
 
 export function MapLegend() {
