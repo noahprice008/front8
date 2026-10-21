@@ -9,7 +9,7 @@ const DOTS: { key: string; label: string; className: string }[] = [
 
 export function MapLegend() {
   return (
-    <div className="rounded-lg border border-border bg-card/95 p-3 shadow-sm backdrop-blur">
+    <div className="rounded-lg border border-border/50 bg-card/55 p-3 shadow-sm backdrop-blur-sm">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Severity scale
       </p>

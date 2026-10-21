@@ -97,6 +97,7 @@ export default function WorldMapClient({
         worldCopyJump: true,
         minZoom: 2,
         maxZoom: 12,
+        attributionControl: false,
       }).setView([31, 12], 2);
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
