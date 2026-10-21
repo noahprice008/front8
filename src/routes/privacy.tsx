@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/privacy")({
+  head,
   component: PrivacyPage,
 });
 
@@ -76,7 +77,7 @@ function PrivacyPage() {
   );
 }
 
-export const head = () => ({
+export function head() { return {
   meta: [
     { title: "Privacy — Magen Global" },
     {
@@ -93,4 +94,4 @@ export const head = () => ({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ],
-});
+}; }

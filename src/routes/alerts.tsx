@@ -50,6 +50,7 @@ const validateSearch = (search: Record<string, unknown>): AlertsSearch => ({
 });
 
 export const Route = createFileRoute("/alerts")({
+  head,
   validateSearch,
   loaderDeps: ({ search: { region, severity, category, tier, status, page } }) => ({
     region,
@@ -183,7 +184,7 @@ function AlertsPage() {
   );
 }
 
-export const head = () => ({
+export function head() { return {
   meta: [
     { title: "Alerts — Magen Global" },
     {
@@ -200,4 +201,4 @@ export const head = () => ({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ],
-});
+}; }

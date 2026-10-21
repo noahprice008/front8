@@ -7,20 +7,20 @@ import {
   type Severity,
 } from "./alerts.types";
 
-const utcFormatter = new Intl.DateTimeFormat("en-GB", {
+const gmtFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
   month: "short",
   year: "numeric",
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
-  timeZone: "UTC",
+  timeZone: "GMT",
 });
 
-/** "21 Oct 2026, 08:02 UTC" — timestamps are always shown in UTC. */
+/** "21 Oct 2026 08:02 GMT" — GMT uses the same zero offset as UTC. */
 export function formatUtc(iso: string | null | undefined): string {
   if (!iso) return "Unknown";
-  return utcFormatter.format(new Date(iso)).replace(",", "") + " UTC";
+  return gmtFormatter.format(new Date(iso)).replace(",", "") + " GMT";
 }
 
 export function severityLabel(severity: Severity): string {

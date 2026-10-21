@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Define leaf-page metadata in each route's `head` option so TanStack Router applies page-specific titles and descriptions.

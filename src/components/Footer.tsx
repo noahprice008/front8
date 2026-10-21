@@ -21,7 +21,7 @@ export function Footer() {
               Alerts
             </Link>
             <Link to="/travel" className="text-muted-foreground hover:text-foreground">
-              Travel advice
+              Travel
             </Link>
             <Link to="/about" className="text-muted-foreground hover:text-foreground">
               About

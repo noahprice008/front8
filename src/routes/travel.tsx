@@ -12,6 +12,7 @@ const travelQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/travel")({
+  head,
   loader: ({ context }) => context.queryClient.ensureQueryData(travelQuery),
   component: TravelPage,
   errorComponent: RouteError,
@@ -167,7 +168,7 @@ function TravelPage() {
   );
 }
 
-export const head = () => ({
+export function head() { return {
   meta: [
     { title: "Travel advice — Magen Global" },
     {
@@ -184,4 +185,4 @@ export const head = () => ({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ],
-});
+}; }
