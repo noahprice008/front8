@@ -73,6 +73,21 @@ function AlertDetailPage() {
           </div>
         )}
 
+        {alert.verification === "developing" ? (
+          <div
+            role="status"
+            className="mb-4 rounded-lg border border-amber-600/60 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-800 dark:text-amber-300"
+          >
+            DEVELOPING: single source, unconfirmed. This report comes from one
+            news source and has not been confirmed by an independent source.
+            It expires within 24 hours unless confirmed.
+          </div>
+        ) : (
+          <p className="mb-4 text-xs font-medium text-muted-foreground">
+            Confirmed by multiple independent sources
+          </p>
+        )}
+
         <div className="flex flex-wrap items-center gap-2">
           <SeverityBadge severity={alert.severity} />
           <StatusLabel expired={expired} />

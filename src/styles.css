@@ -494,3 +494,8 @@
 .map-bubble-wrap {
   position: relative;
 }
+
+.map-legend-dev {
+  border: 2px dashed #d97706;
+  background: transparent;
+}
