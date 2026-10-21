@@ -32,7 +32,7 @@ export function WorldMap({
         ) : (
           <div aria-hidden="true" className="h-[420px] w-full bg-muted sm:h-[520px]" />
         )}
-        <div className="absolute left-3 top-3 z-[700] max-w-[250px]">
+        <div className="absolute bottom-3 left-3 z-[700] max-w-[250px]">
           <MapLegend />
         </div>
       </div>
