@@ -69,7 +69,7 @@ function NewsPage() {
     }),
   );
 
-  const regions = mapData.regions
+  const regions: { slug: string; name: string; indent?: boolean }[] = mapData.regions
     .filter((r) => !r.parentId)
     .flatMap((p) => [
       { slug: p.slug, name: p.name },
