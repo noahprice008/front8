@@ -59,29 +59,45 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --color-sev-info: var(--sev-info);
+  --color-sev-low: var(--sev-low);
+  --color-sev-moderate: var(--sev-moderate);
+  --color-sev-high: var(--sev-high);
+  --color-sev-critical: var(--sev-critical);
+  --color-sev-clear: var(--sev-clear);
+  --color-sev-off: var(--sev-off);
 }
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --background: oklch(0.986 0.003 260);
+  --foreground: oklch(0.24 0.028 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: oklch(0.24 0.028 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --popover-foreground: oklch(0.24 0.028 260);
+  --primary: oklch(0.33 0.055 259);
+  --primary-foreground: oklch(0.98 0.003 260);
+  --secondary: oklch(0.955 0.006 260);
+  --secondary-foreground: oklch(0.33 0.055 259);
+  --muted: oklch(0.955 0.006 260);
+  --muted-foreground: oklch(0.5 0.022 260);
+  --accent: oklch(0.94 0.012 258);
+  --accent-foreground: oklch(0.33 0.055 259);
+  --destructive: oklch(0.53 0.21 25);
+  --destructive-foreground: oklch(0.98 0.003 260);
+  --border: oklch(0.905 0.008 260);
+  --input: oklch(0.905 0.008 260);
+  --ring: oklch(0.55 0.08 255);
+  --sev-info: oklch(0.56 0.03 250);
+  --sev-low: oklch(0.63 0.07 225);
+  --sev-moderate: oklch(0.72 0.13 75);
+  --sev-high: oklch(0.6 0.18 38);
+  --sev-critical: oklch(0.53 0.21 25);
+  --sev-clear: oklch(0.58 0.12 155);
+  --sev-off: oklch(0.62 0.012 260);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -98,25 +114,32 @@
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
+  --background: oklch(0.17 0.02 260);
+  --foreground: oklch(0.94 0.005 260);
+  --card: oklch(0.21 0.02 260);
+  --card-foreground: oklch(0.94 0.005 260);
+  --popover: oklch(0.21 0.02 260);
+  --popover-foreground: oklch(0.94 0.005 260);
+  --primary: oklch(0.88 0.04 255);
+  --primary-foreground: oklch(0.19 0.03 260);
+  --secondary: oklch(0.27 0.02 260);
+  --secondary-foreground: oklch(0.94 0.005 260);
+  --muted: oklch(0.27 0.02 260);
+  --muted-foreground: oklch(0.68 0.015 260);
+  --accent: oklch(0.29 0.025 260);
+  --accent-foreground: oklch(0.94 0.005 260);
+  --destructive: oklch(0.65 0.19 25);
+  --destructive-foreground: oklch(0.15 0.02 260);
+  --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
+  --ring: oklch(0.6 0.06 255);
+  --sev-info: oklch(0.7 0.03 250);
+  --sev-low: oklch(0.72 0.07 225);
+  --sev-moderate: oklch(0.78 0.13 80);
+  --sev-high: oklch(0.68 0.17 40);
+  --sev-critical: oklch(0.66 0.2 25);
+  --sev-clear: oklch(0.68 0.12 155);
+  --sev-off: oklch(0.62 0.012 260);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -140,5 +163,160 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
   }
 }
+
+/* ---------- World map (Leaflet) ---------- */
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--color-muted);
+  z-index: 0;
+}
+
+.dark .leaflet-container {
+  background: oklch(0.14 0.02 260);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  color: var(--color-popover-foreground);
+  background: var(--color-popover);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 0.18);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-md);
+}
+
+.leaflet-popup-content {
+  margin: 0.75rem 0.9rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.leaflet-popup-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.leaflet-popup-content strong {
+  font-size: 0.9375rem;
+}
+
+.leaflet-control-zoom a {
+  color: var(--color-foreground) !important;
+}
+
+.dark .leaflet-control-zoom a {
+  background: var(--color-card) !important;
+  border-color: var(--color-border) !important;
+}
+
+.leaflet-popup-content p.leaflet-bubble-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.6875rem;
+  color: var(--color-muted-foreground);
+}
+
+/* Map bubbles (HTML divIcon markers) */
+
+.map-bubble {
+  border-radius: 9999px;
+  border: 2px solid oklch(1 0 0 / 0.85);
+  box-shadow: 0 1px 4px oklch(0 0 0 / 0.25);
+  box-sizing: border-box;
+}
+
+.map-bubble--critical {
+  background: var(--color-sev-critical);
+  animation: map-pulse-critical 1.6s ease-out infinite;
+}
+
+.map-bubble--high {
+  background: var(--color-sev-high);
+  animation: map-pulse-high 1.8s ease-out infinite;
+}
+
+.map-bubble--moderate {
+  background: var(--color-sev-moderate);
+  animation: map-pulse-moderate 2.8s ease-out infinite;
+}
+
+.map-bubble--elevated {
+  background: var(--color-sev-info);
+}
+
+.map-bubble--clear {
+  background: var(--color-sev-clear);
+  border-width: 2px;
+}
+
+.map-bubble--unmonitored {
+  background: transparent;
+  border: 2.5px dashed var(--color-sev-off);
+  box-shadow: none;
+}
+
+/* Feed-delay style: hatched grey, so "no marker data" is never mistaken for safety */
+.map-bubble--stale {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-sev-off) 0 5px,
+    transparent 5px 9px
+  );
+  border: 2px solid var(--color-sev-off);
+  box-shadow: none;
+  animation: none !important;
+}
+
+@keyframes map-pulse-critical {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-sev-critical) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 16px color-mix(in oklab, var(--color-sev-critical) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-sev-critical) 0%, transparent);
+  }
+}
+
+@keyframes map-pulse-high {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-sev-high) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 14px color-mix(in oklab, var(--color-sev-high) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-sev-high) 0%, transparent);
+  }
+}
+
+@keyframes map-pulse-moderate {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-sev-moderate) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 12px color-mix(in oklab, var(--color-sev-moderate) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-sev-moderate) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-bubble {
+    animation: none !important;
+  }
+}
+

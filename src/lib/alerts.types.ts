@@ -1,0 +1,131 @@
+export type Severity = "info" | "low" | "moderate" | "high" | "critical";
+
+export type AlertCategory =
+  | "antisemitic_incident"
+  | "demonstration"
+  | "security_threat"
+  | "travel_advisory"
+  | "official_warning"
+  | "other";
+
+export type AlertTier = "official" | "verified_news";
+
+export type AlertStatusFilter = "active" | "expired";
+
+export const SEVERITY_ORDER: Severity[] = [
+  "info",
+  "low",
+  "moderate",
+  "high",
+  "critical",
+];
+
+export const SEVERITY_LABELS: Record<Severity, string> = {
+  info: "Info",
+  low: "Low",
+  moderate: "Moderate",
+  high: "High",
+  critical: "Critical",
+};
+
+export const CATEGORY_LABELS: Record<AlertCategory, string> = {
+  antisemitic_incident: "Antisemitic incident",
+  demonstration: "Demonstration",
+  security_threat: "Security threat",
+  travel_advisory: "Travel advisory",
+  official_warning: "Official warning",
+  other: "Other",
+};
+
+export const CATEGORY_VALUES = Object.keys(CATEGORY_LABELS) as AlertCategory[];
+
+export const TIER_LABELS: Record<AlertTier, string> = {
+  official: "Official",
+  verified_news: "Verified news",
+};
+
+/** Tier labels shown on the alert detail page. */
+export function tierStatusLabel(tier: AlertTier, authority: string | null): string {
+  if (tier === "official") return "Official source";
+  return `Automated summary of reporting by ${authority ?? "verified publishers"}`;
+}
+
+export function topSeverityRank(severity: Severity): number {
+  return SEVERITY_ORDER.indexOf(severity);
+}
+
+/** Map marker classification, mirroring the region_status view. */
+export type MarkerStyle = "critical" | "high" | "moderate" | "elevated" | "clear" | "unmonitored";
+
+export function markerStyleFor(region: {
+  covered: boolean;
+  activeAlerts: number;
+  topSeverity: Severity | null;
+}): MarkerStyle {
+  if (!region.covered) return "unmonitored";
+  if (region.activeAlerts > 0) {
+    const s = region.topSeverity;
+    if (s === "critical") return "critical";
+    if (s === "high") return "high";
+    if (s === "moderate") return "moderate";
+    return "elevated"; // info or low with active alerts
+  }
+  return "clear";
+}
+
+export interface MapRegion {
+  id: string;
+  name: string;
+  slug: string;
+  isoCode: string | null;
+  lat: number | null;
+  lng: number | null;
+  covered: boolean;
+  activeAlerts: number;
+  topSeverity: Severity | null;
+  latestAlerts: { id: string; title: string }[];
+}
+
+export interface FeedStatus {
+  lastIngestOkAt: string | null;
+  autopublishEnabled: boolean;
+  feedDelay: boolean;
+}
+
+export interface AlertListItem {
+  id: string;
+  title: string;
+  summary: string;
+  category: AlertCategory;
+  severity: Severity;
+  tier: AlertTier;
+  issuingAuthority: string | null;
+  autoPublished: boolean;
+  publishedAt: string | null;
+  expiresAt: string;
+  lastReviewedAt: string | null;
+  regionName: string;
+  regionSlug: string;
+}
+
+export interface AlertDetail extends AlertListItem {
+  primarySourceUrl: string;
+  sources: { publisher: string | null; url: string }[];
+}
+
+export interface PublicSource {
+  name: string | null;
+  url: string;
+  tier: AlertTier | null;
+}
+
+export interface TravelRegion {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface TravelData {
+  regions: TravelRegion[];
+  sourcesByRegion: Record<string, PublicSource[]>;
+}
