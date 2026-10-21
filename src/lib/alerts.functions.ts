@@ -1,19 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
   CATEGORY_VALUES,
+  HEADLINE_TOPICS,
   SEVERITY_ORDER,
   type AlertCategory,
   type AlertDetail,
   type AlertListItem,
   type AlertStatusFilter,
   type AlertTier,
+  type AlertVerification,
+  type Headline,
   TIER_VALUES,
   type FeedStatus,
   type MapRegion,
   type PublicSource,
   type Severity,
+  type TickerItem,
   type TravelData,
   type TravelAdvisory,
+  type VerificationFilter,
 } from "./alerts.types";
 
 const FEED_DELAY_MS = 3 * 60 * 60 * 1000;
@@ -37,6 +42,7 @@ interface RawAlertRow {
   published_at: string | null;
   expires_at: string;
   last_reviewed_at: string | null;
+  verification: AlertVerification | null;
   regions: { name: string; slug: string } | null;
 }
 
@@ -86,6 +92,7 @@ function mapAlertRow(row: RawAlertRow): AlertListItem {
     lastReviewedAt: row.last_reviewed_at,
     regionName: row.regions?.name ?? "",
     regionSlug: row.regions?.slug ?? "",
+    verification: row.verification === "developing" ? "developing" : "confirmed",
   };
 }
 
