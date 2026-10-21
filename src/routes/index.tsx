@@ -32,8 +32,9 @@ function HomePage() {
   const { data } = useSuspenseQuery(mapQuery);
   const { data: latest } = useSuspenseQuery(latestQuery);
 
-  const monitored = data.regions.filter((r) => r.covered).length;
-  const totalActive = data.regions.reduce(
+  const topLevel = data.regions.filter((r) => !r.parentId);
+  const monitored = topLevel.filter((r) => r.covered).length;
+  const totalActive = topLevel.reduce(
     (sum, r) => sum + (r.covered ? r.activeAlerts : 0),
     0,
   );

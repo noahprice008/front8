@@ -105,7 +105,7 @@ function AlertDetailPage() {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Published</dt>
+            <dt className="text-xs text-muted-foreground">Issued / updated</dt>
             <dd className="mt-0.5 font-medium text-foreground">{formatUtc(alert.publishedAt)}</dd>
           </div>
           <div>

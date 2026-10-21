@@ -18,7 +18,7 @@ export function FilterBar({
   regions,
   values,
 }: {
-  regions: { slug: string; name: string }[];
+  regions: { slug: string; name: string; indent?: boolean }[];
   values: FilterValues;
 }) {
   const navigate = useNavigate();
@@ -54,6 +54,7 @@ export function FilterBar({
           <option value="">All regions</option>
           {regions.map((r) => (
             <option key={r.slug} value={r.slug}>
+              {r.indent ? "\u00A0\u00A0\u00A0— " : ""}
               {r.name}
             </option>
           ))}

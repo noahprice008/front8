@@ -79,6 +79,7 @@ export function markerStyleFor(region: {
 
 export interface MapRegion {
   id: string;
+  parentId: string | null;
   name: string;
   slug: string;
   isoCode: string | null;
@@ -127,9 +128,20 @@ export interface TravelRegion {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
+}
+
+export interface TravelAdvisory {
+  id: string;
+  title: string;
+  issuingAuthority: string | null;
+  levelText: string;
+  updatedAt: string | null;
+  sourceUrl: string;
 }
 
 export interface TravelData {
   regions: TravelRegion[];
   sourcesByRegion: Record<string, PublicSource[]>;
+  advisoriesByRegion: Record<string, TravelAdvisory[]>;
 }
