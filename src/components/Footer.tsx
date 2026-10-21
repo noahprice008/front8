@@ -31,6 +31,18 @@ export function Footer() {
             </Link>
           </nav>
         </div>
+        <p className="mt-6 border-t border-border pt-4 text-[0.6875rem] leading-relaxed text-muted-foreground">
+          Map basemap{" "}
+          <a
+            href="https://www.esri.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            © Esri
+          </a>
+          . Alert data and grading are Magen Global's own.
+        </p>
       </div>
     </footer>
   );
