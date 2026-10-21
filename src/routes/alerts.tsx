@@ -109,7 +109,6 @@ function AlertsPage() {
             severity: search.severity,
             category: search.category,
             tier: search.tier,
-      tier: search.tier,
             status: search.status,
           }}
         />
