@@ -1,0 +1,144 @@
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { RouteError } from "@/components/RouteError";
+import { getTravelData } from "@/lib/alerts.functions";
+import type { AlertTier } from "@/lib/alerts.types";
+
+const travelQuery = queryOptions({
+  queryKey: ["travel"],
+  queryFn: () => getTravelData(),
+  staleTime: 60_000,
+});
+
+export const Route = createFileRoute("/travel")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(travelQuery),
+  component: TravelPage,
+  errorComponent: RouteError,
+});
+
+const CHECKLIST = [
+  "Save the local emergency numbers in your phone.",
+  "Know where the nearest protected space or shelter is.",
+  "Sign up for official local alert apps or mailing lists.",
+  "Register with your embassy or consulate if you are abroad.",
+  "Keep identity documents and medication easy to reach.",
+  "Agree a family check-in plan in case you are separated.",
+];
+
+function TierTag({ tier }: { tier: AlertTier | null }) {
+  if (tier === "official") {
+    return (
+      <span className="rounded border border-sev-clear/40 bg-sev-clear/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-sev-clear">
+        Official
+      </span>
+    );
+  }
+  if (tier === "verified_news") {
+    return (
+      <span className="rounded border border-sev-info/40 bg-sev-info/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-sev-info">
+        Verified news
+      </span>
+    );
+  }
+  return null;
+}
+
+function TravelPage() {
+  const { data } = useSuspenseQuery(travelQuery);
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+      <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+        Travel advice
+      </h1>
+      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+        Links to official government travel advisories for every monitored
+        region, plus a short practical checklist. We link out; we do not
+        paraphrase official advice.
+      </p>
+
+      <div className="mt-8 space-y-4">
+        {data.regions.map((region) => {
+          const sources = data.sourcesByRegion[region.id] ?? [];
+          return (
+            <section
+              key={region.id}
+              className="rounded-lg border border-border bg-card p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="font-display text-lg font-semibold text-foreground">
+                  {region.name}
+                </h2>
+                <Link
+                  to="/alerts"
+                  search={{ region: region.slug }}
+                  className="text-sm font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                >
+                  Alerts for {region.name}
+                </Link>
+              </div>
+
+              {sources.length === 0 ? (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No official advisory links recorded for this region yet.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {sources.map((source) => (
+                    <li key={source.url} className="flex items-start gap-2 text-sm">
+                      <TierTag tier={source.tier} />
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="break-all text-primary underline underline-offset-2 hover:opacity-80"
+                      >
+                        {source.name || source.url}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      <section className="mt-10 rounded-xl border border-border bg-card p-6">
+        <h2 className="font-display text-lg font-semibold text-foreground">
+          Practical checklist, anywhere
+        </h2>
+        <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+          {CHECKLIST.map((item) => (
+            <li key={item} className="flex items-start gap-2">
+              <span
+                aria-hidden="true"
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sev-clear"
+              />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+export const head = () => ({
+  meta: [
+    { title: "Travel advice — The Eighth Front" },
+    {
+      name: "description",
+      content:
+        "Official government travel advisories for every monitored region, plus a practical safety checklist.",
+    },
+    { property: "og:title", content: "Travel advice — The Eighth Front" },
+    {
+      property: "og:description",
+      content:
+        "Official government travel advisories for every monitored region, plus a practical safety checklist.",
+    },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ],
+});
