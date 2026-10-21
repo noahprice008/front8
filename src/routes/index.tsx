@@ -5,12 +5,13 @@ import { FeedStatusBanner } from "@/components/FeedStatusBanner";
 import { RouteError } from "@/components/RouteError";
 import { WorldMap } from "@/components/map/WorldMap";
 import { getLatestAlerts, getMapData } from "@/lib/alerts.functions";
-import { formatUtc } from "@/lib/format";
+import { formatRelative, formatUtc } from "@/lib/format";
 
 const mapQuery = queryOptions({
   queryKey: ["map-data"],
   queryFn: () => getMapData(),
   staleTime: 30_000,
+  refetchInterval: 60_000,
 });
 
 const latestQuery = queryOptions({
@@ -90,15 +91,39 @@ function HomePage() {
         </dl>
       </section>
 
+      {/* Mission */}
+      <section className="mt-10 max-w-3xl rounded-xl border-l-4 border-primary bg-card p-6" aria-label="Our mission">
+        <h2 className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+          Our mission
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-foreground">
+          Magen Global is an independent safety service for Jews living
+          outside Israel. We track the current antisemitic climate on the
+          ground, country by country: attacks, threats, harassment,
+          demonstrations near Jewish places, and official warnings. We do not
+          cover Israel, Israeli news, or events inside Israel and the
+          Palestinian territories.
+        </p>
+      </section>
+
       {/* World map */}
       <section className="mt-10" aria-label="World map">
-        <h2 className="font-display text-xl font-semibold text-foreground">
-          Current climate
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          One zone per monitored region. Click any zone for its latest
-          alerts.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="font-display text-xl font-semibold text-foreground">
+              Current climate
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              One zone per monitored region. Click any zone for its latest
+              alerts.
+            </p>
+          </div>
+          <p className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground" aria-live="off">
+            {data.feed.lastIngestOkAt
+              ? `Updated ${formatRelative(data.feed.lastIngestOkAt)}`
+              : "Feed not yet updated"}
+          </p>
+        </div>
         <div className="mt-4 space-y-3">
           <FeedStatusBanner
             feedDelay={data.feed.feedDelay}

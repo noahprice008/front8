@@ -52,14 +52,31 @@ function AboutPage() {
       </h1>
 
       <section className="mt-6">
-        <h2 className="font-display text-lg font-semibold text-foreground">Mission</h2>
+        <h2 className="font-display text-lg font-semibold text-foreground">Our mission</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Magen Global is an independent service that watches official
-          government sources and verified news reporting, and publishes
-          clear, sourced safety alerts for Jewish communities worldwide. We
-          exist because worrying rumours travel faster than verified facts.
-          Our answer is calm, graded, checkable information — never
-          sensationalism.
+          Magen Global is an independent safety service for Jews living
+          outside Israel. We track the current antisemitic climate on the
+          ground, country by country: attacks, threats, harassment,
+          demonstrations near Jewish places, and official warnings. We do not
+          cover Israel, Israeli news, or events inside Israel and the
+          Palestinian territories.
+        </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="font-display text-lg font-semibold text-foreground">How we work</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Official government sources are shown as published. News-based
+          alerts are written automatically from reporting by independent news
+          outlets, in neutral wording, with links to every source. A report
+          from a single outlet is shown as DEVELOPING and unconfirmed. Items
+          we cannot assess are not published. Errors can be reported from any
+          alert page and are corrected publicly. This service complements,
+          and does not replace, official emergency guidance.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Ticker headlines are discovered using the GDELT Project and link to
+          the original publishers.
         </p>
       </section>
 
