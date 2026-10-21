@@ -20,6 +20,7 @@ const latestQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/")({
+  head,
   loader: ({ context }) => {
     void context.queryClient.ensureQueryData(mapQuery);
     void context.queryClient.ensureQueryData(latestQuery);
@@ -43,10 +44,7 @@ function HomePage() {
     <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
       {/* Hero */}
       <section className="max-w-3xl">
-        <p className="font-display text-xs font-semibold uppercase tracking-[0.3em] text-brand-accent">
-          Awareness. Truth. Preparation.
-        </p>
-        <h1 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Know the climate. Understand the risk. Stay prepared.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -95,10 +93,10 @@ function HomePage() {
       {/* World map */}
       <section className="mt-10" aria-label="World map">
         <h2 className="font-display text-xl font-semibold text-foreground">
-          The world, at a glance
+          Current climate
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          One bubble per monitored region. Click any region for its latest
+          One zone per monitored region. Click any zone for its latest
           alerts.
         </p>
         <div className="mt-4 space-y-3">
@@ -172,7 +170,7 @@ function HomePage() {
   );
 }
 
-export const head = () => ({
+export function head() { return {
   meta: [
     {
       title: "Magen Global — Safety alerts for Jewish communities",
@@ -191,4 +189,4 @@ export const head = () => ({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ],
-});
+}; }
