@@ -21,7 +21,7 @@ export function getPublicClient(): SupabaseClient {
   cached = createClient(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: {
-      fetch: (input, init) => {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
         const headers = new Headers(
           typeof Request !== "undefined" && input instanceof Request
             ? input.headers
