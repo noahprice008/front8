@@ -432,7 +432,26 @@ export type Database = {
       }
     }
     Functions: {
+      ingest_official_alert: {
+        Args: {
+          p_authority: string
+          p_category: Database["public"]["Enums"]["alert_category"]
+          p_expires_at: string
+          p_level?: number
+          p_region_slug: string
+          p_severity: Database["public"]["Enums"]["alert_severity"]
+          p_summary: string
+          p_title: string
+          p_url: string
+        }
+        Returns: string
+      }
       is_staff: { Args: never; Returns: boolean }
+      mark_ingest_failed: {
+        Args: { p_error: string; p_feed_url: string }
+        Returns: undefined
+      }
+      mark_ingest_ok: { Args: { p_feed_url: string }; Returns: undefined }
     }
     Enums: {
       alert_category:
