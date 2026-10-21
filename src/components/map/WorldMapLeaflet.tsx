@@ -97,6 +97,7 @@ export default function WorldMapClient({
         worldCopyJump: true,
         minZoom: 2,
         maxZoom: 12,
+        attributionControl: false,
       }).setView([31, 12], 2);
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
@@ -178,7 +179,7 @@ export default function WorldMapClient({
   return (
     <div
       ref={containerRef}
-      className="h-[420px] w-full sm:h-[520px]"
+      className="h-[420px] w-full sm:h-[520px] lg:h-[680px]"
       role="application"
       aria-label="World map showing monitored regions and active alerts. The same information is available as a text list."
     />

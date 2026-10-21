@@ -23,14 +23,14 @@ export function WorldMap({
             fallback={
               <div
                 aria-hidden="true"
-                className="h-[420px] w-full animate-pulse bg-muted sm:h-[520px]"
+                className="h-[420px] w-full animate-pulse bg-muted sm:h-[520px] lg:h-[680px]"
               />
             }
           >
             <WorldMapClient regions={regions} feedDelay={feedDelay} />
           </Suspense>
         ) : (
-          <div aria-hidden="true" className="h-[420px] w-full bg-muted sm:h-[520px]" />
+          <div aria-hidden="true" className="h-[420px] w-full bg-muted sm:h-[520px] lg:h-[680px]" />
         )}
         <div className="absolute bottom-3 left-3 z-[700] max-w-[250px]">
           <MapLegend />

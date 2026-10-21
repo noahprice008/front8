@@ -40,20 +40,25 @@ function HomePage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
       {/* Hero */}
       <section className="max-w-3xl">
         <p className="font-display text-xs font-semibold uppercase tracking-[0.3em] text-brand-accent">
           Awareness. Truth. Preparation.
         </p>
         <h1 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
-          Safety alerts for Jewish communities, from sources you can check.
+          Know the climate. Understand the risk. Stay prepared.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          Magen Global monitors official government advice and verified
-          news reporting around the clock, and publishes graded, sourced
-          alerts for Jewish communities worldwide — so you hear early, and can
-          verify for yourself.
+          Magen Global is a safety service for Jews living outside Israel. We
+          track the current antisemitic climate on the ground, country by
+          country — including attacks, threats, harassment, demonstrations
+          targeting Jewish communities, and official safety warnings.
+        </p>
+        <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+          We bring together sourced, verifiable information to help Jewish
+          communities understand what is happening, assess risks, and make
+          informed decisions about their safety.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link

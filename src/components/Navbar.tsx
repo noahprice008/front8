@@ -55,7 +55,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-[1000] border-b-2 border-primary bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link to="/" aria-label="Magen Global home">
           <BrandLogo />
         </Link>
