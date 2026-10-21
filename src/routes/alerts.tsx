@@ -5,7 +5,7 @@ import { FeedStatusBanner } from "@/components/FeedStatusBanner";
 import { FilterBar } from "@/components/FilterBar";
 import { RouteError } from "@/components/RouteError";
 import { getMapData, listAlerts } from "@/lib/alerts.functions";
-import type { AlertStatusFilter } from "@/lib/alerts.types";
+import type { AlertStatusFilter, VerificationFilter } from "@/lib/alerts.types";
 
 const mapQuery = queryOptions({
   queryKey: ["map-data"],
@@ -18,6 +18,7 @@ interface AlertsSearch {
   severity?: string | undefined;
   category?: string | undefined;
   tier?: string | undefined;
+  verification?: VerificationFilter | undefined;
   status?: AlertStatusFilter | undefined;
   page?: number | undefined;
 }
@@ -27,6 +28,7 @@ function alertsListQuery(deps: {
   severity?: string | undefined;
   category?: string | undefined;
   tier?: string | undefined;
+  verification?: VerificationFilter | undefined;
   status: AlertStatusFilter;
   page: number;
 }) {
@@ -42,6 +44,10 @@ const validateSearch = (search: Record<string, unknown>): AlertsSearch => ({
   severity: typeof search["severity"] === "string" ? search["severity"] : undefined,
   category: typeof search["category"] === "string" ? search["category"] : undefined,
   tier: typeof search["tier"] === "string" ? search["tier"] : undefined,
+  verification:
+    search["verification"] === "confirmed" || search["verification"] === "developing"
+      ? search["verification"]
+      : undefined,
   status: search["status"] === "expired" ? "expired" : "active",
   page:
     typeof search["page"] === "number" && search["page"] > 0
@@ -52,11 +58,12 @@ const validateSearch = (search: Record<string, unknown>): AlertsSearch => ({
 export const Route = createFileRoute("/alerts")({
   head,
   validateSearch,
-  loaderDeps: ({ search: { region, severity, category, tier, status, page } }) => ({
+  loaderDeps: ({ search: { region, severity, category, tier, verification, status, page } }) => ({
     region,
     severity,
     category,
     tier,
+    verification,
     status: status ?? "active",
     page: page ?? 0,
   }),
@@ -77,6 +84,7 @@ function AlertsPage() {
       severity: search.severity,
       category: search.category,
       tier: search.tier,
+      verification: search.verification,
       status: search.status ?? "active",
       page: search.page ?? 0,
     }),
@@ -124,6 +132,7 @@ function AlertsPage() {
             severity: search.severity,
             category: search.category,
             tier: search.tier,
+            verification: search.verification,
             status: search.status,
           }}
         />
