@@ -185,13 +185,13 @@ function AlertsPage() {
 
 export const head = () => ({
   meta: [
-    { title: "Alerts — The Eighth Front" },
+    { title: "Alerts — Magen Global" },
     {
       name: "description",
       content:
         "Browse all published safety alerts by region, severity and category, with links to original sources.",
     },
-    { property: "og:title", content: "Alerts — The Eighth Front" },
+    { property: "og:title", content: "Alerts — Magen Global" },
     {
       property: "og:description",
       content:

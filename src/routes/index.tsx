@@ -43,14 +43,14 @@ function HomePage() {
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       {/* Hero */}
       <section className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Independent · sourced · no fear, just facts
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.3em] text-brand-accent">
+          Awareness. Truth. Preparation.
         </p>
-        <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Safety alerts for Jewish communities, from sources you can check.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          The Eighth Front monitors official government advice and verified
+          Magen Global monitors official government advice and verified
           news reporting around the clock, and publishes graded, sourced
           alerts for Jewish communities worldwide — so you hear early, and can
           verify for yourself.
@@ -58,7 +58,7 @@ function HomePage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             to="/alerts"
-            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center rounded-sm bg-primary px-5 font-display uppercase tracking-wider py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             View current alerts
           </Link>
@@ -170,14 +170,14 @@ function HomePage() {
 export const head = () => ({
   meta: [
     {
-      title: "The Eighth Front — Safety alerts for Jewish communities",
+      title: "Magen Global — Safety alerts for Jewish communities",
     },
     {
       name: "description",
       content:
         "Independent, sourced safety alerts for Jewish communities worldwide. Live world map, graded alerts, official sources.",
     },
-    { property: "og:title", content: "The Eighth Front — Safety alerts for Jewish communities" },
+    { property: "og:title", content: "Magen Global — Safety alerts for Jewish communities" },
     {
       property: "og:description",
       content:

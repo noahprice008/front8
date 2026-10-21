@@ -105,9 +105,8 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         .limit(1),
       supabase
         .from("alerts")
-        .select("id,title,region_id")
+        .select("id,title,region_id,severity")
         .eq("status", "published")
-        .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
         .limit(300),
@@ -119,12 +118,19 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
     const regionRows = (regionRes.data ?? []) as unknown as RegionStatusRow[];
     const parentOf = new Map(regionRows.map((r) => [r.id, r.parent_id]));
     const latestByRegion = new Map<string, { id: string; title: string }[]>();
-    const push = (regionId: string, a: { id: string; title: string }) => {
+    const countByRegion = new Map<string, number>();
+    const topByRegion = new Map<string, Severity>();
+    const push = (regionId: string, a: { id: string; title: string; severity: Severity }) => {
       const list = latestByRegion.get(regionId) ?? [];
       if (list.length < 3) list.push({ id: a.id, title: a.title });
       latestByRegion.set(regionId, list);
+      countByRegion.set(regionId, (countByRegion.get(regionId) ?? 0) + 1);
+      const cur = topByRegion.get(regionId);
+      if (!cur || SEVERITY_ORDER.indexOf(a.severity) > SEVERITY_ORDER.indexOf(cur)) {
+        topByRegion.set(regionId, a.severity);
+      }
     };
-    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string }[]) {
+    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity }[]) {
       push(a.region_id, a);
       const parent = parentOf.get(a.region_id);
       if (parent) push(parent, a); // roll child alerts up, like region_status does
@@ -139,8 +145,8 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
       lat: row.lat,
       lng: row.lng,
       covered: Boolean(row.covered),
-      activeAlerts: Number(row.active_alerts ?? 0),
-      topSeverity: row.top_severity,
+      activeAlerts: countByRegion.get(row.id) ?? 0,
+      topSeverity: topByRegion.get(row.id) ?? null,
       latestAlerts: latestByRegion.get(row.id) ?? [],
     }));
 
@@ -290,7 +296,6 @@ export const getLatestAlerts = createServerFn({ method: "GET" })
         "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions!inner(name,slug)",
       )
       .eq("status", "published")
-      .neq("category", "travel_advisory")
       .gt("expires_at", new Date().toISOString())
       .order("published_at", { ascending: false, nullsFirst: false })
       .limit(data.limit);

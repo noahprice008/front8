@@ -36,11 +36,7 @@ export function WorldMap({
           <MapLegend />
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
-          {regions.filter((r) => r.covered && !r.parentId).length} regions monitored · use the
-          buttons in the corner to zoom, drag to pan.
-        </p>
+      <div className="mt-3 flex justify-end">
         <Link
           to="/alerts"
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"

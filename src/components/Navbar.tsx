@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { BrandLogo } from "./BrandLogo";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
@@ -53,15 +54,10 @@ export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <header className="border-b border-border bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-[1000] border-b-2 border-primary bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex flex-col leading-tight">
-          <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-            The Eighth Front
-          </span>
-          <span className="text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
-            Community safety alerts
-          </span>
+        <Link to="/" aria-label="Magen Global home">
+          <BrandLogo />
         </Link>
         <nav aria-label="Main navigation" className="flex items-center gap-1 sm:gap-2">
           {NAV_LINKS.map((link) => {

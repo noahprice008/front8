@@ -53,7 +53,7 @@ function AboutPage() {
       <section className="mt-6">
         <h2 className="font-display text-lg font-semibold text-foreground">Mission</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          The Eighth Front is an independent service that watches official
+          Magen Global is an independent service that watches official
           government sources and verified news reporting, and publishes
           clear, sourced safety alerts for Jewish communities worldwide. We
           exist because worrying rumours travel faster than verified facts.
@@ -189,13 +189,13 @@ function AboutPage() {
 
 export const head = () => ({
   meta: [
-    { title: "About — The Eighth Front" },
+    { title: "About — Magen Global" },
     {
       name: "description",
       content:
         "How alerts are produced, what each severity means, our sources, limitations and contact details.",
     },
-    { property: "og:title", content: "About — The Eighth Front" },
+    { property: "og:title", content: "About — Magen Global" },
     {
       property: "og:description",
       content:

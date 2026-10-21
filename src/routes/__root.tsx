@@ -79,15 +79,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "The Eighth Front" },
+      { title: "Magen Global" },
       {
         name: "description",
-        content: "Independent, sourced safety alerts for Jewish communities worldwide.",
+        content: "Awareness. Truth. Preparation. Trusted, sourced safety alerts for Jewish communities worldwide.",
       },
-      { property: "og:title", content: "The Eighth Front" },
+      { property: "og:title", content: "Magen Global" },
       {
         property: "og:description",
-        content: "Independent, sourced safety alerts for Jewish communities worldwide.",
+        content: "Awareness. Truth. Preparation. Trusted, sourced safety alerts for Jewish communities worldwide.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -101,10 +101,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@500;600;700;800&display=swap",
       },
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/favicon.svg" },
     ],
   }),
   shellComponent: RootShell,
