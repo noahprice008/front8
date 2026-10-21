@@ -190,6 +190,7 @@ export interface AlertsFilters {
   severity?: string | undefined;
   category?: string | undefined;
   tier?: string | undefined;
+  verification?: VerificationFilter | undefined;
   status: AlertStatusFilter;
   page: number;
 }
@@ -207,6 +208,10 @@ export const listAlerts = createServerFn({ method: "GET" })
         ? (q.category as AlertCategory)
         : undefined,
       tier: TIER_VALUES.includes(q.tier as AlertTier) ? (q.tier as AlertTier) : undefined,
+      verification:
+        q.verification === "confirmed" || q.verification === "developing"
+          ? q.verification
+          : undefined,
       status: q.status === "expired" ? ("expired" as const) : ("active" as const),
       page:
         Number.isFinite(Number(q.page)) && Number(q.page) > 0
@@ -249,6 +254,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       if (data.category) query = query.eq("category", data.category);
       else query = query.neq("category", "travel_advisory");
       if (data.tier) query = query.eq("tier", data.tier as AlertTier);
+      if (data.verification) query = query.eq("verification", data.verification);
 
       const from = data.page * PAGE_SIZE;
       const { data: rows, error, count } = await query
