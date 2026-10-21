@@ -63,7 +63,8 @@ function popupHtml(region: MapRegion): string {
     }
   } else {
     parts.push(
-      '<p class="leaflet-bubble-note">No current alerts from monitored sources. It does not guarantee safety.</p>',
+      '<p class="leaflet-bubble-note">No current incident alerts. It does not guarantee safety.</p>',
+      '<p class="leaflet-bubble-note">Travel advisories are listed on the <a href="/travel">Travel advice</a> page.</p>',
     );
   }
   parts.push(
@@ -121,8 +122,18 @@ export default function WorldMapClient({
         attributeFilter: ["class"],
       });
 
-      const markers: LayerGroup = L.layerGroup().addTo(map);
+      const DETAIL_ZOOM = 4;
+      const parentsWithChildren = new Set(
+        regions.map((r) => r.parentId).filter((id): id is string => !!id),
+      );
+      const overview: LayerGroup = L.layerGroup();
+      const detail: LayerGroup = L.layerGroup();
       for (const region of regions) {
+        const markers = region.parentId
+          ? detail
+          : parentsWithChildren.has(region.id)
+            ? overview
+            : null;
         if (region.lat == null || region.lng == null) continue;
         const realStyle = markerStyleFor(region);
         const style: string = feedDelay ? "stale" : realStyle;
@@ -140,9 +151,21 @@ export default function WorldMapClient({
           keyboard: true,
           title: feedDelay ? `${region.name} (feed delayed)` : region.name,
         })
-          .addTo(markers)
+          .addTo(markers ?? map)
           .bindPopup(popupHtml(region), { maxWidth: 300 });
       }
+      const syncZoom = () => {
+        const zoomedIn = map.getZoom() >= DETAIL_ZOOM;
+        if (zoomedIn) {
+          map.removeLayer(overview);
+          detail.addTo(map);
+        } else {
+          map.removeLayer(detail);
+          overview.addTo(map);
+        }
+      };
+      syncZoom();
+      map.on("zoomend", syncZoom);
     })();
 
     return () => {

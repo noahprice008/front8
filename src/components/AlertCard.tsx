@@ -32,7 +32,7 @@ export function AlertCard({ alert }: { alert: AlertListItem }) {
         >
           {alert.regionName}
         </Link>
-        <span>Published {formatUtc(alert.publishedAt)}</span>
+        <span>Issued / updated {formatUtc(alert.publishedAt)}</span>
         <span>Expires {formatUtc(alert.expiresAt)}</span>
       </div>
     </article>

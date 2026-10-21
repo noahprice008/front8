@@ -81,7 +81,14 @@ function AlertsPage() {
     }),
   );
 
-  const regions = mapData.regions.map((r) => ({ slug: r.slug, name: r.name }));
+  const regions = mapData.regions
+    .filter((r) => !r.parentId)
+    .flatMap((p) => [
+      { slug: p.slug, name: p.name },
+      ...mapData.regions
+        .filter((c) => c.parentId === p.id)
+        .map((c) => ({ slug: c.slug, name: c.name, indent: true })),
+    ]);
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
 
   return (
@@ -92,6 +99,13 @@ function AlertsPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         Every published alert, with its sources. This list is the accessible
         equivalent of the home-page map.
+      </p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Looking for government travel advisories? See{" "}
+        <Link to="/travel" className="font-medium text-primary underline underline-offset-2 hover:opacity-80">
+          Travel advice
+        </Link>
+        .
       </p>
 
       <div className="mt-4">

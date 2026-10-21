@@ -13,6 +13,7 @@ import {
   type PublicSource,
   type Severity,
   type TravelData,
+  type TravelAdvisory,
 } from "./alerts.types";
 
 const FEED_DELAY_MS = 3 * 60 * 60 * 1000;
@@ -41,6 +42,7 @@ interface RawAlertRow {
 
 interface RegionStatusRow {
   id: string;
+  parent_id: string | null;
   name: string;
   slug: string;
   iso_code: string | null;
@@ -95,7 +97,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
     const [regionRes, settingsRes, alertsRes] = await Promise.all([
       supabase
         .from("region_status")
-        .select("id,name,slug,iso_code,lat,lng,covered,active_alerts,top_severity")
+        .select("id,parent_id,name,slug,iso_code,lat,lng,covered,active_alerts,top_severity")
         .order("name"),
       supabase
         .from("system_settings")
@@ -105,6 +107,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         .from("alerts")
         .select("id,title,region_id")
         .eq("status", "published")
+        .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
         .limit(300),
@@ -113,17 +116,23 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
     if (regionRes.error) throw new Error("Could not load map data.");
     if (alertsRes.error) throw new Error("Could not load map data.");
 
+    const regionRows = (regionRes.data ?? []) as unknown as RegionStatusRow[];
+    const parentOf = new Map(regionRows.map((r) => [r.id, r.parent_id]));
     const latestByRegion = new Map<string, { id: string; title: string }[]>();
-    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string }[]) {
-      const list = latestByRegion.get(a.region_id) ?? [];
+    const push = (regionId: string, a: { id: string; title: string }) => {
+      const list = latestByRegion.get(regionId) ?? [];
       if (list.length < 3) list.push({ id: a.id, title: a.title });
-      latestByRegion.set(a.region_id, list);
+      latestByRegion.set(regionId, list);
+    };
+    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string }[]) {
+      push(a.region_id, a);
+      const parent = parentOf.get(a.region_id);
+      if (parent) push(parent, a); // roll child alerts up, like region_status does
     }
 
-    const regions: MapRegion[] = (
-      (regionRes.data ?? []) as unknown as RegionStatusRow[]
-    ).map((row) => ({
+    const regions: MapRegion[] = regionRows.map((row) => ({
       id: row.id,
+      parentId: row.parent_id,
       name: row.name,
       slug: row.slug,
       isoCode: row.iso_code,
@@ -189,7 +198,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       let query = supabase
         .from("alerts")
         .select(
-          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions!inner(name,slug)",
+          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions(name,slug)",
           { count: "exact" },
         )
         .eq("status", "published");
@@ -199,9 +208,21 @@ export const listAlerts = createServerFn({ method: "GET" })
           ? query.gt("expires_at", new Date().toISOString())
           : query.lte("expires_at", new Date().toISOString());
 
-      if (data.region) query = query.eq("regions.slug", data.region);
+      if (data.region) {
+        const { data: regionRows, error: regionErr } = await supabase
+          .from("regions")
+          .select("id,slug,parent_id");
+        if (regionErr) throw new Error("Could not load alerts.");
+        const all = (regionRows ?? []) as { id: string; slug: string; parent_id: string | null }[];
+        const selected = all.find((r) => r.slug === data.region);
+        const ids = selected
+          ? [selected.id, ...all.filter((r) => r.parent_id === selected.id).map((r) => r.id)]
+          : ["00000000-0000-0000-0000-000000000000"];
+        query = query.in("region_id", ids);
+      }
       if (data.severity) query = query.eq("severity", data.severity);
       if (data.category) query = query.eq("category", data.category);
+      else query = query.neq("category", "travel_advisory");
       if (data.tier) query = query.eq("tier", data.tier as AlertTier);
 
       const from = data.page * PAGE_SIZE;
@@ -269,6 +290,7 @@ export const getLatestAlerts = createServerFn({ method: "GET" })
         "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions!inner(name,slug)",
       )
       .eq("status", "published")
+      .neq("category", "travel_advisory")
       .gt("expires_at", new Date().toISOString())
       .order("published_at", { ascending: false, nullsFirst: false })
       .limit(data.limit);
@@ -281,16 +303,47 @@ export const getTravelData = createServerFn({ method: "GET" }).handler(
   async (): Promise<TravelData> => {
     const supabase = await publicClient();
 
-    const [regionsRes, sourcesRes] = await Promise.all([
-      supabase.from("regions").select("id,name,slug").eq("covered", true).order("name"),
+    const [regionsRes, sourcesRes, advisoriesRes] = await Promise.all([
+      supabase.from("regions").select("id,name,slug,parent_id").eq("covered", true).order("name"),
       supabase
         .from("public_sources")
         .select("region_id,name,url,tier")
         .not("region_id", "is", null)
         .order("tier", { ascending: true }),
+      supabase
+        .from("alerts")
+        .select("id,region_id,title,summary,issuing_authority,primary_source_url,published_at,updated_at")
+        .eq("status", "published")
+        .eq("category", "travel_advisory")
+        .gt("expires_at", new Date().toISOString())
+        .order("published_at", { ascending: false, nullsFirst: false }),
     ]);
 
     if (regionsRes.error) throw new Error("Could not load travel advice.");
+
+    const advisoriesByRegion: Record<string, TravelAdvisory[]> = {};
+    for (const a of (advisoriesRes.data ?? []) as unknown as {
+      id: string;
+      region_id: string;
+      title: string;
+      summary: string;
+      issuing_authority: string | null;
+      primary_source_url: string;
+      published_at: string | null;
+      updated_at: string | null;
+    }[]) {
+      const level = /level\s*\d[^.\n]*/i.exec(a.summary)?.[0] ?? a.summary;
+      const list = advisoriesByRegion[a.region_id] ?? [];
+      list.push({
+        id: a.id,
+        title: a.title,
+        issuingAuthority: a.issuing_authority,
+        levelText: level.trim(),
+        updatedAt: a.published_at ?? a.updated_at,
+        sourceUrl: a.primary_source_url,
+      });
+      advisoriesByRegion[a.region_id] = list;
+    }
 
     const sourcesByRegion: Record<string, PublicSource[]> = {};
     for (const s of (sourcesRes.data ?? []) as unknown as PublicSourceRow[]) {
@@ -301,12 +354,17 @@ export const getTravelData = createServerFn({ method: "GET" }).handler(
       sourcesByRegion[regionId] = list;
     }
 
-    return {
-      regions: ((regionsRes.data ?? []) as unknown as RegionIdNameSlugRow[]).map(
-        (r) => ({ id: r.id, name: r.name, slug: r.slug }),
-      ),
-      sourcesByRegion,
-    };
+    const rows = (regionsRes.data ?? []) as unknown as (RegionIdNameSlugRow & {
+      parent_id: string | null;
+    })[];
+    const ordered: TravelData["regions"] = [];
+    for (const r of rows.filter((x) => !x.parent_id)) {
+      ordered.push({ id: r.id, name: r.name, slug: r.slug, parentId: null });
+      for (const c of rows.filter((x) => x.parent_id === r.id))
+        ordered.push({ id: c.id, name: c.name, slug: c.slug, parentId: r.id });
+    }
+
+    return { regions: ordered, sourcesByRegion, advisoriesByRegion };
   },
 );
 
