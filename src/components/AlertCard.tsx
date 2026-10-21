@@ -11,6 +11,15 @@ export function AlertCard({ alert }: { alert: AlertListItem }) {
         <SeverityBadge severity={alert.severity} size="sm" />
         <StatusLabel expired={new Date(alert.expiresAt).getTime() <= Date.now()} />
         <span className="text-xs text-muted-foreground">{categoryLabel(alert.category)}</span>
+        {alert.verification === "developing" ? (
+          <span className="rounded-sm border border-amber-600/60 bg-amber-500/10 px-1.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+            Developing: single source, unconfirmed
+          </span>
+        ) : (
+          <span className="text-[0.6875rem] font-medium text-muted-foreground">
+            Confirmed by multiple independent sources
+          </span>
+        )}
       </div>
       <h3 className="mt-2 text-base font-semibold leading-snug text-foreground">
         <Link

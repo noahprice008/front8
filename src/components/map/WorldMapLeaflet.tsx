@@ -52,6 +52,14 @@ function popupHtml(region: MapRegion): string {
   } else {
     parts.push('<p class="leaflet-bubble-note">No current alerts. This does not guarantee safety.</p>');
   }
+  if (region.developingAlerts > 0) {
+    parts.push(`<p class="leaflet-bubble-note">${region.developingAlerts} developing report${region.developingAlerts === 1 ? "" : "s"}, unconfirmed</p>`);
+    if (region.latestDeveloping.length > 0) {
+      parts.push("<ul>");
+      for (const a of region.latestDeveloping) parts.push(`<li><a href="/alerts/${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a></li>`);
+      parts.push("</ul>");
+    }
+  }
   parts.push(`<p class="leaflet-bubble-note"><a href="/alerts?region=${encodeURIComponent(region.slug)}">View all alerts for ${name}</a></p>`);
   return `<strong>${name}</strong>${coords}${parts.join("")}`;
 }
@@ -104,9 +112,10 @@ export default function WorldMapClient({ regions, feedDelay }: { regions: MapReg
         const style: string = feedDelay ? "stale" : realStyle;
         const radius = radiusFor(realStyle, region.activeAlerts);
         const size = radius * 2;
+        const devRing = region.developingAlerts > 0 ? '<span class="map-bubble-dev" aria-hidden="true"></span>' : "";
         const icon = L.divIcon({
           className: "map-bubble-anchor",
-          html: `<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : ""}</div>`,
+          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : ""}</div></div>`,
           iconSize: [size, size],
           iconAnchor: [radius, radius],
           popupAnchor: [0, -radius],

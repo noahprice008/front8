@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Navbar } from "@/components/Navbar";
+import { NewsTicker } from "@/components/NewsTicker";
 import { Footer } from "@/components/Footer";
 
 function NotFoundComponent() {
@@ -141,6 +142,7 @@ function RootComponent() {
         Skip to content
       </a>
       <Navbar />
+      <NewsTicker />
       <main id="main" className="min-h-[60vh]">
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />

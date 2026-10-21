@@ -1,13 +1,14 @@
 import { useNavigate } from "@tanstack/react-router";
 import { CATEGORY_VALUES, SEVERITY_ORDER, TIER_LABELS, TIER_VALUES } from "@/lib/alerts.types";
 import { CATEGORY_LABELS, SEVERITY_LABELS } from "@/lib/alerts.types";
-import type { AlertStatusFilter } from "@/lib/alerts.types";
+import type { AlertStatusFilter, VerificationFilter } from "@/lib/alerts.types";
 
 export interface FilterValues {
   region?: string | undefined;
   severity?: string | undefined;
   category?: string | undefined;
   tier?: string | undefined;
+  verification?: VerificationFilter | undefined;
   status?: AlertStatusFilter | undefined;
 }
 
@@ -119,6 +120,22 @@ export function FilterBar({
       </div>
 
       <div className="flex flex-col gap-1">
+        <label htmlFor="filter-verification" className="text-xs font-medium text-muted-foreground">
+          Verification
+        </label>
+        <select
+          id="filter-verification"
+          className={SELECT_CLASS}
+          value={values.verification ?? ""}
+          onChange={(e) => update("verification", e.target.value)}
+        >
+          <option value="">All</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="developing">Developing</option>
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1">
         <label htmlFor="filter-status" className="text-xs font-medium text-muted-foreground">
           Status
         </label>
@@ -133,7 +150,7 @@ export function FilterBar({
         </select>
       </div>
 
-      {(values.region || values.severity || values.category || values.tier) && (
+      {(values.region || values.severity || values.category || values.tier || values.verification) && (
         <button
           type="button"
           onClick={() =>

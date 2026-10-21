@@ -12,6 +12,24 @@ export type AlertTier = "official" | "verified_news" | "community_security";
 
 export type AlertStatusFilter = "active" | "expired";
 
+export type AlertVerification = "confirmed" | "developing";
+
+export type VerificationFilter = "confirmed" | "developing";
+
+export const HEADLINE_TOPIC_LABELS: Record<string, string> = {
+  attack: "Attack",
+  harassment: "Harassment",
+  vandalism: "Vandalism",
+  threat: "Threat",
+  official_warning: "Official warning",
+  hate_crime_data: "Hate crime data",
+  policy_response: "Policy response",
+  demonstration: "Demonstration",
+  other: "Other",
+};
+
+export const HEADLINE_TOPICS = Object.keys(HEADLINE_TOPIC_LABELS);
+
 export const SEVERITY_ORDER: Severity[] = [
   "info",
   "low",
@@ -89,6 +107,8 @@ export interface MapRegion {
   activeAlerts: number;
   topSeverity: Severity | null;
   latestAlerts: { id: string; title: string }[];
+  developingAlerts: number;
+  latestDeveloping: { id: string; title: string }[];
 }
 
 export interface FeedStatus {
@@ -111,6 +131,7 @@ export interface AlertListItem {
   lastReviewedAt: string | null;
   regionName: string;
   regionSlug: string;
+  verification: AlertVerification;
 }
 
 export interface AlertDetail extends AlertListItem {
@@ -144,4 +165,23 @@ export interface TravelData {
   regions: TravelRegion[];
   sourcesByRegion: Record<string, PublicSource[]>;
   advisoriesByRegion: Record<string, TravelAdvisory[]>;
+}
+
+export interface Headline {
+  id: string;
+  url: string;
+  title: string;
+  publisher: string | null;
+  publishedAt: string | null;
+  regionSlug: string | null;
+  topic: string | null;
+}
+
+export interface TickerItem {
+  kind: "alert" | "headline";
+  id: string;
+  title: string;
+  source: string | null;
+  url: string;
+  publishedAt: string | null;
 }

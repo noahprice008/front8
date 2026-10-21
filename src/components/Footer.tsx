@@ -12,6 +12,11 @@ export function Footer() {
               Awareness. Truth. Preparation.
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              An independent safety service for Jews living outside Israel,
+              tracking the antisemitic climate country by country. We do not
+              cover Israel.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               This service complements, and does not replace, official emergency
               guidance. In an emergency contact local emergency services.
             </p>

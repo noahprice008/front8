@@ -1,19 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
 import {
   CATEGORY_VALUES,
+  HEADLINE_TOPICS,
   SEVERITY_ORDER,
   type AlertCategory,
   type AlertDetail,
   type AlertListItem,
   type AlertStatusFilter,
   type AlertTier,
+  type AlertVerification,
+  type Headline,
   TIER_VALUES,
   type FeedStatus,
   type MapRegion,
   type PublicSource,
   type Severity,
+  type TickerItem,
   type TravelData,
   type TravelAdvisory,
+  type VerificationFilter,
 } from "./alerts.types";
 
 const FEED_DELAY_MS = 3 * 60 * 60 * 1000;
@@ -37,6 +42,7 @@ interface RawAlertRow {
   published_at: string | null;
   expires_at: string;
   last_reviewed_at: string | null;
+  verification: AlertVerification | null;
   regions: { name: string; slug: string } | null;
 }
 
@@ -86,6 +92,7 @@ function mapAlertRow(row: RawAlertRow): AlertListItem {
     lastReviewedAt: row.last_reviewed_at,
     regionName: row.regions?.name ?? "",
     regionSlug: row.regions?.slug ?? "",
+    verification: row.verification === "developing" ? "developing" : "confirmed",
   };
 }
 
@@ -105,7 +112,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         .limit(1),
       supabase
         .from("alerts")
-        .select("id,title,region_id,severity")
+        .select("id,title,region_id,severity,verification")
         .eq("status", "published")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -120,7 +127,17 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
     const latestByRegion = new Map<string, { id: string; title: string }[]>();
     const countByRegion = new Map<string, number>();
     const topByRegion = new Map<string, Severity>();
-    const push = (regionId: string, a: { id: string; title: string; severity: Severity }) => {
+    const devCountByRegion = new Map<string, number>();
+    const devLatestByRegion = new Map<string, { id: string; title: string }[]>();
+    const push = (regionId: string, a: { id: string; title: string; severity: Severity; verification: string | null }) => {
+      if (a.verification === "developing") {
+        // Developing reports never change the confirmed marker count or colour.
+        devCountByRegion.set(regionId, (devCountByRegion.get(regionId) ?? 0) + 1);
+        const devList = devLatestByRegion.get(regionId) ?? [];
+        if (devList.length < 3) devList.push({ id: a.id, title: a.title });
+        devLatestByRegion.set(regionId, devList);
+        return;
+      }
       const list = latestByRegion.get(regionId) ?? [];
       if (list.length < 3) list.push({ id: a.id, title: a.title });
       latestByRegion.set(regionId, list);
@@ -130,7 +147,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         topByRegion.set(regionId, a.severity);
       }
     };
-    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity }[]) {
+    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity; verification: string | null }[]) {
       push(a.region_id, a);
       const parent = parentOf.get(a.region_id);
       if (parent) push(parent, a); // roll child alerts up, like region_status does
@@ -148,6 +165,8 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
       activeAlerts: countByRegion.get(row.id) ?? 0,
       topSeverity: topByRegion.get(row.id) ?? null,
       latestAlerts: latestByRegion.get(row.id) ?? [],
+      developingAlerts: devCountByRegion.get(row.id) ?? 0,
+      latestDeveloping: devLatestByRegion.get(row.id) ?? [],
     }));
 
     const settings = ((settingsRes.data ?? []) as unknown as SettingsRow[])[0];
@@ -171,6 +190,7 @@ export interface AlertsFilters {
   severity?: string | undefined;
   category?: string | undefined;
   tier?: string | undefined;
+  verification?: VerificationFilter | undefined;
   status: AlertStatusFilter;
   page: number;
 }
@@ -188,6 +208,10 @@ export const listAlerts = createServerFn({ method: "GET" })
         ? (q.category as AlertCategory)
         : undefined,
       tier: TIER_VALUES.includes(q.tier as AlertTier) ? (q.tier as AlertTier) : undefined,
+      verification:
+        q.verification === "confirmed" || q.verification === "developing"
+          ? q.verification
+          : undefined,
       status: q.status === "expired" ? ("expired" as const) : ("active" as const),
       page:
         Number.isFinite(Number(q.page)) && Number(q.page) > 0
@@ -204,7 +228,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       let query = supabase
         .from("alerts")
         .select(
-          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions(name,slug)",
+          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)",
           { count: "exact" },
         )
         .eq("status", "published");
@@ -230,6 +254,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       if (data.category) query = query.eq("category", data.category);
       else query = query.neq("category", "travel_advisory");
       if (data.tier) query = query.eq("tier", data.tier as AlertTier);
+      if (data.verification) query = query.eq("verification", data.verification);
 
       const from = data.page * PAGE_SIZE;
       const { data: rows, error, count } = await query
@@ -256,7 +281,7 @@ export const getAlert = createServerFn({ method: "GET" })
       supabase
         .from("alerts")
         .select(
-          "id,title,summary,category,severity,tier,issuing_authority,primary_source_url,auto_published,published_at,expires_at,last_reviewed_at,regions(name,slug)",
+          "id,title,summary,category,severity,tier,issuing_authority,primary_source_url,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)",
         )
         .eq("id", data.id)
         .eq("status", "published")
@@ -293,7 +318,7 @@ export const getLatestAlerts = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabase
       .from("alerts")
       .select(
-        "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions!inner(name,slug)",
+        "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions!inner(name,slug)",
       )
       .eq("status", "published")
       .gt("expires_at", new Date().toISOString())
@@ -388,3 +413,144 @@ export const listPublicSources = createServerFn({ method: "GET" }).handler(
     }[]).map((s) => ({ name: s.name, url: s.url, tier: s.tier }));
   },
 );
+
+interface HeadlineRow {
+  id: string;
+  url: string;
+  title: string;
+  publisher: string | null;
+  published_at: string | null;
+  region_slug: string | null;
+  topic: string | null;
+}
+
+function mapHeadline(row: HeadlineRow): Headline {
+  return {
+    id: row.id,
+    url: row.url,
+    title: row.title,
+    publisher: row.publisher,
+    publishedAt: row.published_at,
+    regionSlug: row.region_slug,
+    topic: row.topic,
+  };
+}
+
+/** Ticker feed: 30 newest kept headlines interleaved with the 5 newest confirmed active alerts. */
+export const getTickerItems = createServerFn({ method: "GET" }).handler(
+  async (): Promise<TickerItem[]> => {
+    const supabase = await publicClient();
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [headlinesRes, alertsRes] = await Promise.all([
+      supabase
+        .from("headlines")
+        .select("id,url,title,publisher,published_at,region_slug,topic")
+        .eq("kept", true)
+        .gt("published_at", since)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(30),
+      supabase
+        .from("alerts")
+        .select("id,title,issuing_authority,published_at")
+        .eq("status", "published")
+        .eq("verification", "confirmed")
+        .neq("category", "travel_advisory")
+        .gt("expires_at", new Date().toISOString())
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(5),
+    ]);
+
+    if (headlinesRes.error) throw new Error("Could not load ticker.");
+    if (alertsRes.error) throw new Error("Could not load ticker.");
+
+    const items: TickerItem[] = [];
+    for (const h of (headlinesRes.data ?? []) as unknown as HeadlineRow[]) {
+      items.push({
+        kind: "headline",
+        id: h.id,
+        title: h.title,
+        source: h.publisher,
+        url: h.url,
+        publishedAt: h.published_at,
+      });
+    }
+    for (const a of (alertsRes.data ?? []) as unknown as {
+      id: string;
+      title: string;
+      issuing_authority: string | null;
+      published_at: string | null;
+    }[]) {
+      items.push({
+        kind: "alert",
+        id: a.id,
+        title: a.title,
+        source: a.issuing_authority,
+        url: `/alerts/${a.id}`,
+        publishedAt: a.published_at,
+      });
+    }
+    // Interleave by recency: newest first, alerts and reports mixed.
+    items.sort((x, y) => {
+      const tx = x.publishedAt ? new Date(x.publishedAt).getTime() : 0;
+      const ty = y.publishedAt ? new Date(y.publishedAt).getTime() : 0;
+      return ty - tx;
+    });
+    return items;
+  },
+);
+
+export interface HeadlinesFilters {
+  region?: string | undefined;
+  topic?: string | undefined;
+  page: number;
+}
+
+export const listHeadlines = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown): HeadlinesFilters => {
+    const q = (input ?? {}) as Partial<HeadlinesFilters>;
+    return {
+      region:
+        typeof q.region === "string" && q.region.trim() ? q.region.trim() : undefined,
+      topic: HEADLINE_TOPICS.includes(q.topic as string)
+        ? (q.topic as string)
+        : undefined,
+      page:
+        Number.isFinite(Number(q.page)) && Number(q.page) > 0
+          ? Math.floor(Number(q.page))
+          : 0,
+    };
+  })
+  .handler(
+    async ({
+      data,
+    }): Promise<{ items: Headline[]; total: number; page: number; pageSize: number }> => {
+      const supabase = await publicClient();
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+      let query = supabase
+        .from("headlines")
+        .select("id,url,title,publisher,published_at,region_slug,topic", {
+          count: "exact",
+        })
+        .eq("kept", true)
+        .gt("published_at", since);
+
+      if (data.region) query = query.eq("region_slug", data.region);
+      if (data.topic) query = query.eq("topic", data.topic);
+
+      const from = data.page * PAGE_SIZE;
+      const { data: rows, error, count } = await query
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) throw new Error("Could not load headlines.");
+
+      return {
+        items: ((rows ?? []) as unknown as HeadlineRow[]).map(mapHeadline),
+        total: count ?? 0,
+        page: data.page,
+        pageSize: PAGE_SIZE,
+      };
+    },
+  );
