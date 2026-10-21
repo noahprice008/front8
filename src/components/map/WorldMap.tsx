@@ -38,7 +38,7 @@ export function WorldMap({
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {regions.filter((r) => r.covered).length} regions monitored · use the
+          {regions.filter((r) => r.covered && !r.parentId).length} regions monitored · use the
           buttons in the corner to zoom, drag to pan.
         </p>
         <Link

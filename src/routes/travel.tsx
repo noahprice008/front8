@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { RouteError } from "@/components/RouteError";
 import { getTravelData } from "@/lib/alerts.functions";
 import type { AlertTier } from "@/lib/alerts.types";
+import { formatUtc } from "@/lib/format";
 
 const travelQuery = queryOptions({
   queryKey: ["travel"],
@@ -67,10 +68,11 @@ function TravelPage() {
       <div className="mt-8 space-y-4">
         {data.regions.map((region) => {
           const sources = data.sourcesByRegion[region.id] ?? [];
+          const advisories = data.advisoriesByRegion[region.id] ?? [];
           return (
             <section
               key={region.id}
-              className="rounded-lg border border-border bg-card p-5"
+              className={`rounded-lg border border-border bg-card p-5${region.parentId ? " ml-6" : ""}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-lg font-semibold text-foreground">
@@ -85,6 +87,40 @@ function TravelPage() {
                 </Link>
               </div>
 
+              <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Active travel advisories
+              </h3>
+              {advisories.length === 0 ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  No active government travel advisories recorded.
+                </p>
+              ) : (
+                <ul className="mt-2 space-y-3">
+                  {advisories.map((a) => (
+                    <li key={a.id} className="text-sm">
+                      <p className="font-medium text-foreground">{a.title}</p>
+                      <p className="text-muted-foreground">
+                        {a.issuingAuthority ?? "Issuing authority not stated"} · {a.levelText}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Last updated {formatUtc(a.updatedAt)} ·{" "}
+                        <a
+                          href={a.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline underline-offset-2 hover:opacity-80"
+                        >
+                          Official source
+                        </a>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <h3 className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Official advisory links
+              </h3>
               {sources.length === 0 ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   No official advisory links recorded for this region yet.
