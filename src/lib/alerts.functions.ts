@@ -7,6 +7,7 @@ import {
   type AlertListItem,
   type AlertStatusFilter,
   type AlertTier,
+  TIER_VALUES,
   type FeedStatus,
   type MapRegion,
   type PublicSource,
@@ -154,6 +155,7 @@ export interface AlertsFilters {
   region?: string | undefined;
   severity?: string | undefined;
   category?: string | undefined;
+  tier?: string | undefined;
   status: AlertStatusFilter;
   page: number;
 }
@@ -170,6 +172,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       category: CATEGORY_VALUES.includes(q.category as AlertCategory)
         ? (q.category as AlertCategory)
         : undefined,
+      tier: TIER_VALUES.includes(q.tier as AlertTier) ? (q.tier as AlertTier) : undefined,
       status: q.status === "expired" ? ("expired" as const) : ("active" as const),
       page:
         Number.isFinite(Number(q.page)) && Number(q.page) > 0
@@ -199,6 +202,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       if (data.region) query = query.eq("regions.slug", data.region);
       if (data.severity) query = query.eq("severity", data.severity);
       if (data.category) query = query.eq("category", data.category);
+      if (data.tier) query = query.eq("tier", data.tier as AlertTier);
 
       const from = data.page * PAGE_SIZE;
       const { data: rows, error, count } = await query

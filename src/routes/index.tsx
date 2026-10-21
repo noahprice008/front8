@@ -148,7 +148,7 @@ function HomePage() {
           <div>
             <p className="text-sm font-semibold text-primary">2 · Grade</p>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Every item is graded by tier — official, or an automated summary
+              Every item is graded by tier — official, trusted community security source, or an automated summary
               of verified reporting — and by severity, with links to the
               original sources.
             </p>

@@ -33,6 +33,13 @@ function TierTag({ tier }: { tier: AlertTier | null }) {
       </span>
     );
   }
+  if (tier === "community_security") {
+    return (
+      <span className="rounded border border-sev-moderate/40 bg-sev-moderate/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-sev-moderate">
+        Trusted community security source
+      </span>
+    );
+  }
   if (tier === "verified_news") {
     return (
       <span className="rounded border border-sev-info/40 bg-sev-info/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-sev-info">
