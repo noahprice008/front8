@@ -112,7 +112,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         .limit(1),
       supabase
         .from("alerts")
-        .select("id,title,region_id,severity")
+        .select("id,title,region_id,severity,verification")
         .eq("status", "published")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -127,7 +127,17 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
     const latestByRegion = new Map<string, { id: string; title: string }[]>();
     const countByRegion = new Map<string, number>();
     const topByRegion = new Map<string, Severity>();
-    const push = (regionId: string, a: { id: string; title: string; severity: Severity }) => {
+    const devCountByRegion = new Map<string, number>();
+    const devLatestByRegion = new Map<string, { id: string; title: string }[]>();
+    const push = (regionId: string, a: { id: string; title: string; severity: Severity; verification: string | null }) => {
+      if (a.verification === "developing") {
+        // Developing reports never change the confirmed marker count or colour.
+        devCountByRegion.set(regionId, (devCountByRegion.get(regionId) ?? 0) + 1);
+        const devList = devLatestByRegion.get(regionId) ?? [];
+        if (devList.length < 3) devList.push({ id: a.id, title: a.title });
+        devLatestByRegion.set(regionId, devList);
+        return;
+      }
       const list = latestByRegion.get(regionId) ?? [];
       if (list.length < 3) list.push({ id: a.id, title: a.title });
       latestByRegion.set(regionId, list);
@@ -137,7 +147,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         topByRegion.set(regionId, a.severity);
       }
     };
-    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity }[]) {
+    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity; verification: string | null }[]) {
       push(a.region_id, a);
       const parent = parentOf.get(a.region_id);
       if (parent) push(parent, a); // roll child alerts up, like region_status does
@@ -155,6 +165,8 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
       activeAlerts: countByRegion.get(row.id) ?? 0,
       topSeverity: topByRegion.get(row.id) ?? null,
       latestAlerts: latestByRegion.get(row.id) ?? [],
+      developingAlerts: devCountByRegion.get(row.id) ?? 0,
+      latestDeveloping: devLatestByRegion.get(row.id) ?? [],
     }));
 
     const settings = ((settingsRes.data ?? []) as unknown as SettingsRow[])[0];
