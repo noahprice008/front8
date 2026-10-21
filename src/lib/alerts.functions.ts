@@ -228,7 +228,7 @@ export const listAlerts = createServerFn({ method: "GET" })
       let query = supabase
         .from("alerts")
         .select(
-          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions(name,slug)",
+          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)",
           { count: "exact" },
         )
         .eq("status", "published");
@@ -281,7 +281,7 @@ export const getAlert = createServerFn({ method: "GET" })
       supabase
         .from("alerts")
         .select(
-          "id,title,summary,category,severity,tier,issuing_authority,primary_source_url,auto_published,published_at,expires_at,last_reviewed_at,regions(name,slug)",
+          "id,title,summary,category,severity,tier,issuing_authority,primary_source_url,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)",
         )
         .eq("id", data.id)
         .eq("status", "published")
@@ -318,7 +318,7 @@ export const getLatestAlerts = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabase
       .from("alerts")
       .select(
-        "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,regions!inner(name,slug)",
+        "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions!inner(name,slug)",
       )
       .eq("status", "published")
       .gt("expires_at", new Date().toISOString())
