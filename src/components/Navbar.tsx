@@ -52,14 +52,22 @@ function ThemeToggle() {
 
 export function Navbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const linkClass = (active: boolean) =>
+    "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 " +
+    (active
+      ? "bg-accent text-accent-foreground"
+      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground");
 
   return (
     <header className="sticky top-0 z-[1000] border-b-2 border-primary bg-background/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link to="/" aria-label="Magen Global home">
+        <Link to="/" aria-label="Magen Global home" className="shrink-0">
           <BrandLogo />
         </Link>
-        <nav aria-label="Main navigation" className="flex items-center gap-1 sm:gap-2">
+        {/* Desktop navigation */}
+        <nav aria-label="Main navigation" className="hidden items-center gap-2 sm:flex">
           {NAV_LINKS.map((link) => {
             const active =
               link.to === "/" ? pathname === "/" : pathname.startsWith(link.to);
@@ -68,12 +76,7 @@ export function Navbar() {
                 key={link.to}
                 to={link.to}
                 aria-current={active ? "page" : undefined}
-                className={
-                  "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 " +
-                  (active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground")
-                }
+                className={linkClass(active)}
               >
                 {link.label}
               </Link>
@@ -81,7 +84,54 @@ export function Navbar() {
           })}
           <ThemeToggle />
         </nav>
+        {/* Mobile: theme toggle + menu button */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:bg-accent"
+          >
+            {menuOpen ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
+      {/* Mobile menu panel */}
+      {menuOpen ? (
+        <nav
+          aria-label="Mobile navigation"
+          className="border-t border-border bg-background px-4 py-2 sm:hidden"
+        >
+          <ul className="flex flex-col gap-1">
+            {NAV_LINKS.map((link) => {
+              const active =
+                link.to === "/" ? pathname === "/" : pathname.startsWith(link.to);
+              return (
+                <li key={link.to}>
+                  <Link
+                    to={link.to}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                    className={"block " + linkClass(active)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      ) : null}
     </header>
   );
 }
