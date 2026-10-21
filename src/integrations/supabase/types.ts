@@ -445,7 +445,7 @@ export type Database = {
       alert_severity: "info" | "low" | "moderate" | "high" | "critical"
       alert_status: "draft" | "published" | "withdrawn"
       queue_status: "pending" | "processed" | "rejected" | "failed"
-      source_tier: "official" | "verified_news"
+      source_tier: "official" | "verified_news" | "community_security"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -584,7 +584,7 @@ export const Constants = {
       alert_severity: ["info", "low", "moderate", "high", "critical"],
       alert_status: ["draft", "published", "withdrawn"],
       queue_status: ["pending", "processed", "rejected", "failed"],
-      source_tier: ["official", "verified_news"],
+      source_tier: ["official", "verified_news", "community_security"],
     },
   },
 } as const
