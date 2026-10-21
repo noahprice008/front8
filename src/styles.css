@@ -371,3 +371,126 @@
   font-size: 0.625rem;
   color: var(--color-muted-foreground);
 }
+
+/* ---- Live news ticker ---- */
+.ticker {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.ticker-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--foreground);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ticker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  animation: ticker-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ticker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.ticker-viewport {
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 60s linear infinite;
+}
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  border-right: 1px solid var(--border);
+}
+.ticker-item:hover {
+  background: var(--accent);
+}
+.ticker-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.ticker-tag--alert {
+  background: #dc2626;
+  color: #fff;
+}
+.ticker-tag--report {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.ticker-source {
+  font-weight: 600;
+}
+.ticker-time {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .ticker-viewport {
+    overflow-x: auto;
+  }
+  .ticker-dot {
+    animation: none;
+  }
+}
+
+/* ---- Developing report ring (map) ---- */
+.map-bubble-dev {
+  position: absolute;
+  inset: -7px;
+  border: 2px dashed #d97706;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  animation: dev-ring-pulse 3.2s ease-in-out infinite;
+}
+@keyframes dev-ring-pulse {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-bubble-dev {
+    animation: none;
+  }
+}
+.map-bubble-wrap {
+  position: relative;
+}
