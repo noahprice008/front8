@@ -1,0 +1,7 @@
+services:
+  front8:
+    build: .
+    container_name: front8
+    restart: unless-stopped
+    ports:
+      - "80:80"
