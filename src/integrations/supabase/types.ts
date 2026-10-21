@@ -68,6 +68,7 @@ export type Database = {
           auto_published: boolean
           category: Database["public"]["Enums"]["alert_category"]
           created_at: string
+          event_key: string | null
           expires_at: string
           id: string
           issuing_authority: string | null
@@ -87,6 +88,7 @@ export type Database = {
           auto_published?: boolean
           category: Database["public"]["Enums"]["alert_category"]
           created_at?: string
+          event_key?: string | null
           expires_at: string
           id?: string
           issuing_authority?: string | null
@@ -106,6 +108,7 @@ export type Database = {
           auto_published?: boolean
           category?: Database["public"]["Enums"]["alert_category"]
           created_at?: string
+          event_key?: string | null
           expires_at?: string
           id?: string
           issuing_authority?: string | null
@@ -285,6 +288,7 @@ export type Database = {
           created_at: string
           feed_url: string | null
           id: string
+          independence_group: string | null
           last_error: string | null
           last_fetched_at: string | null
           last_success_at: string | null
@@ -299,6 +303,7 @@ export type Database = {
           created_at?: string
           feed_url?: string | null
           id?: string
+          independence_group?: string | null
           last_error?: string | null
           last_fetched_at?: string | null
           last_success_at?: string | null
@@ -313,6 +318,7 @@ export type Database = {
           created_at?: string
           feed_url?: string | null
           id?: string
+          independence_group?: string | null
           last_error?: string | null
           last_fetched_at?: string | null
           last_success_at?: string | null
@@ -448,6 +454,17 @@ export type Database = {
       }
     }
     Functions: {
+      ingest_news_candidate: {
+        Args: {
+          p_ai: Json
+          p_feed_url: string
+          p_published_at: string
+          p_snippet: string
+          p_title: string
+          p_url: string
+        }
+        Returns: Json
+      }
       ingest_official_alert: {
         Args: {
           p_authority: string
@@ -464,11 +481,19 @@ export type Database = {
         Returns: string
       }
       is_staff: { Args: never; Returns: boolean }
+      mark_feed_status: {
+        Args: { p_error: string; p_feed_url: string; p_ok: boolean }
+        Returns: undefined
+      }
       mark_ingest_failed: {
         Args: { p_error: string; p_feed_url: string }
         Returns: undefined
       }
       mark_ingest_ok: { Args: { p_feed_url: string }; Returns: undefined }
+      news_item_seen: {
+        Args: { p_payload: Json; p_url: string }
+        Returns: Json
+      }
     }
     Enums: {
       alert_category:
