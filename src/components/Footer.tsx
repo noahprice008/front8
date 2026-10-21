@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { BrandLogo } from "./BrandLogo";
 
 export function Footer() {
   return (
@@ -6,8 +7,9 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-md">
-            <p className="font-display text-base font-semibold text-foreground">
-              Magen Global
+            <BrandLogo />
+            <p className="mt-3 font-display text-[0.6875rem] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Awareness. Truth. Preparation.
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               This service complements, and does not replace, official emergency

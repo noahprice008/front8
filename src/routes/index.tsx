@@ -43,10 +43,10 @@ function HomePage() {
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       {/* Hero */}
       <section className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          Independent · sourced · no fear, just facts
+        <p className="font-display text-xs font-semibold uppercase tracking-[0.3em] text-brand-accent">
+          Awareness. Truth. Preparation.
         </p>
-        <h1 className="mt-3 font-display text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-3 font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Safety alerts for Jewish communities, from sources you can check.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
@@ -58,7 +58,7 @@ function HomePage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             to="/alerts"
-            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center rounded-sm bg-primary px-5 font-display uppercase tracking-wider py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             View current alerts
           </Link>
