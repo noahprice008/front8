@@ -4,4 +4,4 @@
 - [x] Developing reports: dashed amber ring on map, legend entry, popup line, card label, detail banner, verification filter on /alerts.
 - [x] Mission text on Home, About (Our mission + How we work + GDELT note), footer one-liner.
 - [x] Liveness: "Updated N ago" near map, map data refreshes every 60 s.
-- [ ] Verify in running site (ticker hidden until headlines exist; /news empty until ingestion runs).
+- [x] Verify in running site (ticker hidden until headlines exist; /news empty until ingestion runs).
