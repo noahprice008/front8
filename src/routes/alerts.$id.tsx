@@ -16,6 +16,7 @@ const alertQuery = (id: string) =>
   });
 
 export const Route = createFileRoute("/alerts/$id")({
+  head,
   loader: async ({ params, context }) => {
     const detail = await context.queryClient.ensureQueryData(
       alertQuery(params.id),
@@ -158,7 +159,7 @@ function AlertDetailPage() {
   );
 }
 
-export const head = () => ({
+export function head() { return {
   meta: [
     { title: "Alert — Magen Global" },
     {
@@ -173,4 +174,4 @@ export const head = () => ({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ],
-});
+}; }

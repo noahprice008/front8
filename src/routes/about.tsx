@@ -13,6 +13,7 @@ const sourcesQuery = queryOptions({
 });
 
 export const Route = createFileRoute("/about")({
+  head,
   loader: ({ context }) => context.queryClient.ensureQueryData(sourcesQuery),
   component: AboutPage,
   errorComponent: RouteError,
@@ -187,7 +188,7 @@ function AboutPage() {
   );
 }
 
-export const head = () => ({
+export function head() { return {
   meta: [
     { title: "About — Magen Global" },
     {
@@ -204,4 +205,4 @@ export const head = () => ({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ],
-});
+}; }
