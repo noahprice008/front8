@@ -78,13 +78,13 @@ function PrivacyPage() {
 
 export const head = () => ({
   meta: [
-    { title: "Privacy — The Eighth Front" },
+    { title: "Privacy — Magen Global" },
     {
       name: "description",
       content:
         "Plain privacy statement: no accounts, no tracking profiles, minimal anonymous analytics.",
     },
-    { property: "og:title", content: "Privacy — The Eighth Front" },
+    { property: "og:title", content: "Privacy — Magen Global" },
     {
       property: "og:description",
       content:

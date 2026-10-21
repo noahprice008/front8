@@ -50,7 +50,7 @@ function HomePage() {
           Safety alerts for Jewish communities, from sources you can check.
         </h1>
         <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          The Eighth Front monitors official government advice and verified
+          Magen Global monitors official government advice and verified
           news reporting around the clock, and publishes graded, sourced
           alerts for Jewish communities worldwide — so you hear early, and can
           verify for yourself.
@@ -170,14 +170,14 @@ function HomePage() {
 export const head = () => ({
   meta: [
     {
-      title: "The Eighth Front — Safety alerts for Jewish communities",
+      title: "Magen Global — Safety alerts for Jewish communities",
     },
     {
       name: "description",
       content:
         "Independent, sourced safety alerts for Jewish communities worldwide. Live world map, graded alerts, official sources.",
     },
-    { property: "og:title", content: "The Eighth Front — Safety alerts for Jewish communities" },
+    { property: "og:title", content: "Magen Global — Safety alerts for Jewish communities" },
     {
       property: "og:description",
       content:

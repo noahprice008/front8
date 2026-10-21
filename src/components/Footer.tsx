@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-md">
             <p className="font-display text-base font-semibold text-foreground">
-              The Eighth Front
+              Magen Global
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               This service complements, and does not replace, official emergency

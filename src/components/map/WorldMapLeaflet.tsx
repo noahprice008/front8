@@ -9,8 +9,7 @@ const TILE_URLS = {
   dark:
     "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
 };
-const TILE_ATTRIBUTION =
-  'Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a> &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+const TILE_ATTRIBUTION = "&copy; Esri";
 
 const HTML_ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -28,14 +27,14 @@ function radiusFor(style: MarkerStyle, activeAlerts: number): number {
   switch (style) {
     case "critical":
     case "high":
-      return Math.min(9 + activeAlerts * 1.8, 24);
+      return Math.min(18 + activeAlerts * 2.5, 38);
     case "moderate":
     case "elevated":
-      return 11;
+      return Math.min(16 + activeAlerts * 2, 32);
     case "clear":
-      return 7;
+      return 13;
     default:
-      return 9;
+      return 14;
   }
 }
 
@@ -63,7 +62,7 @@ function popupHtml(region: MapRegion): string {
     }
   } else {
     parts.push(
-      '<p class="leaflet-bubble-note">No current incident alerts. It does not guarantee safety.</p>',
+      '<p class="leaflet-bubble-note">No current alerts. This does not guarantee safety.</p>',
       '<p class="leaflet-bubble-note">Travel advisories are listed on the <a href="/travel">Travel advice</a> page.</p>',
     );
   }
@@ -141,7 +140,7 @@ export default function WorldMapClient({
         const size = radius * 2;
         const icon = L.divIcon({
           className: "map-bubble-anchor",
-          html: `<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true"></div>`,
+          html: `<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : ""}</div>`,
           iconSize: [size, size],
           iconAnchor: [radius, radius],
           popupAnchor: [0, -radius],

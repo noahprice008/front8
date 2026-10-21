@@ -169,13 +169,13 @@ function TravelPage() {
 
 export const head = () => ({
   meta: [
-    { title: "Travel advice — The Eighth Front" },
+    { title: "Travel advice — Magen Global" },
     {
       name: "description",
       content:
         "Official government travel advisories for every monitored region, plus a practical safety checklist.",
     },
-    { property: "og:title", content: "Travel advice — The Eighth Front" },
+    { property: "og:title", content: "Travel advice — Magen Global" },
     {
       property: "og:description",
       content:
