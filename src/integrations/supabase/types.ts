@@ -82,6 +82,7 @@ export type Database = {
           tier: Database["public"]["Enums"]["source_tier"]
           title: string
           updated_at: string
+          verification: string
           withdrawn_reason: string | null
         }
         Insert: {
@@ -102,6 +103,7 @@ export type Database = {
           tier: Database["public"]["Enums"]["source_tier"]
           title: string
           updated_at?: string
+          verification?: string
           withdrawn_reason?: string | null
         }
         Update: {
@@ -122,6 +124,7 @@ export type Database = {
           tier?: Database["public"]["Enums"]["source_tier"]
           title?: string
           updated_at?: string
+          verification?: string
           withdrawn_reason?: string | null
         }
         Relationships: [
@@ -168,6 +171,42 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string
           id?: string
+        }
+        Relationships: []
+      }
+      headlines: {
+        Row: {
+          created_at: string
+          id: string
+          kept: boolean
+          published_at: string | null
+          publisher: string | null
+          region_slug: string | null
+          title: string
+          topic: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kept?: boolean
+          published_at?: string | null
+          publisher?: string | null
+          region_slug?: string | null
+          title: string
+          topic?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kept?: boolean
+          published_at?: string | null
+          publisher?: string | null
+          region_slug?: string | null
+          title?: string
+          topic?: string | null
+          url?: string
         }
         Relationships: []
       }
@@ -426,6 +465,7 @@ export type Database = {
         Row: {
           active_alerts: number | null
           covered: boolean | null
+          developing_alerts: number | null
           id: string | null
           iso_code: string | null
           lat: number | null
@@ -454,6 +494,7 @@ export type Database = {
       }
     }
     Functions: {
+      headlines_unseen: { Args: { p_articles: Json }; Returns: Json }
       ingest_news_candidate: {
         Args: {
           p_ai: Json
@@ -494,6 +535,7 @@ export type Database = {
         Args: { p_payload: Json; p_url: string }
         Returns: Json
       }
+      store_headlines: { Args: { p_rows: Json }; Returns: Json }
     }
     Enums: {
       alert_category:
