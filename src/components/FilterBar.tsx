@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { CATEGORY_VALUES, SEVERITY_ORDER } from "@/lib/alerts.types";
+import { CATEGORY_VALUES, SEVERITY_ORDER, TIER_LABELS, TIER_VALUES } from "@/lib/alerts.types";
 import { CATEGORY_LABELS, SEVERITY_LABELS } from "@/lib/alerts.types";
 import type { AlertStatusFilter } from "@/lib/alerts.types";
 
@@ -7,6 +7,7 @@ export interface FilterValues {
   region?: string | undefined;
   severity?: string | undefined;
   category?: string | undefined;
+  tier?: string | undefined;
   status?: AlertStatusFilter | undefined;
 }
 
@@ -98,6 +99,25 @@ export function FilterBar({
       </div>
 
       <div className="flex flex-col gap-1">
+        <label htmlFor="filter-tier" className="text-xs font-medium text-muted-foreground">
+          Source tier
+        </label>
+        <select
+          id="filter-tier"
+          className={SELECT_CLASS}
+          value={values.tier ?? ""}
+          onChange={(e) => update("tier", e.target.value)}
+        >
+          <option value="">All tiers</option>
+          {TIER_VALUES.map((t) => (
+            <option key={t} value={t}>
+              {TIER_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1">
         <label htmlFor="filter-status" className="text-xs font-medium text-muted-foreground">
           Status
         </label>
@@ -112,7 +132,7 @@ export function FilterBar({
         </select>
       </div>
 
-      {(values.region || values.severity || values.category) && (
+      {(values.region || values.severity || values.category || values.tier) && (
         <button
           type="button"
           onClick={() =>

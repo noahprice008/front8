@@ -1,3 +1,4 @@
+import { TIER_LABELS } from "@/lib/alerts.types";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { RouteError } from "@/components/RouteError";
@@ -67,7 +68,7 @@ function AboutPage() {
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Automated feeds collect items from official and verified sources.
-          Each alert carries one of two tiers:
+          Each alert carries one of three tiers:
         </p>
         <ul className="mt-3 space-y-3 text-sm">
           <li className="rounded-lg border border-border bg-card p-4">
@@ -84,6 +85,16 @@ function AboutPage() {
               An automated summary of reporting by verified news publishers,
               with links to the original articles. Labelled "Automated
               summary of reporting by [publishers]".
+            </p>
+          </li>
+          <li className="rounded-lg border border-border bg-card p-4">
+            <p className="font-semibold text-foreground">Tier: trusted community security</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">
+              Reported by a vetted community security network — for example a
+              local security coordinator or neighbourhood watch with an
+              established track record. These sources are reviewed before
+              being trusted, but are not official authorities. Labelled
+              "Trusted community security source".
             </p>
           </li>
         </ul>
@@ -117,7 +128,7 @@ function AboutPage() {
             {sources.map((source) => (
               <li key={source.url} className="flex items-baseline gap-2">
                 <span className="text-[0.6875rem] uppercase tracking-wide text-muted-foreground">
-                  {source.tier === "official" ? "Official" : "Verified news"}
+                  {source.tier ? TIER_LABELS[source.tier] : "Source"}
                 </span>
                 <a
                   href={source.url}

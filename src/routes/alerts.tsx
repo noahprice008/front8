@@ -17,6 +17,7 @@ interface AlertsSearch {
   region?: string | undefined;
   severity?: string | undefined;
   category?: string | undefined;
+  tier?: string | undefined;
   status?: AlertStatusFilter | undefined;
   page?: number | undefined;
 }
@@ -25,6 +26,7 @@ function alertsListQuery(deps: {
   region?: string | undefined;
   severity?: string | undefined;
   category?: string | undefined;
+  tier?: string | undefined;
   status: AlertStatusFilter;
   page: number;
 }) {
@@ -39,6 +41,7 @@ const validateSearch = (search: Record<string, unknown>): AlertsSearch => ({
   region: typeof search["region"] === "string" ? search["region"] : undefined,
   severity: typeof search["severity"] === "string" ? search["severity"] : undefined,
   category: typeof search["category"] === "string" ? search["category"] : undefined,
+  tier: typeof search["tier"] === "string" ? search["tier"] : undefined,
   status: search["status"] === "expired" ? "expired" : "active",
   page:
     typeof search["page"] === "number" && search["page"] > 0
@@ -48,10 +51,11 @@ const validateSearch = (search: Record<string, unknown>): AlertsSearch => ({
 
 export const Route = createFileRoute("/alerts")({
   validateSearch,
-  loaderDeps: ({ search: { region, severity, category, status, page } }) => ({
+  loaderDeps: ({ search: { region, severity, category, tier, status, page } }) => ({
     region,
     severity,
     category,
+    tier,
     status: status ?? "active",
     page: page ?? 0,
   }),
@@ -71,6 +75,7 @@ function AlertsPage() {
       region: search.region,
       severity: search.severity,
       category: search.category,
+      tier: search.tier,
       status: search.status ?? "active",
       page: search.page ?? 0,
     }),
@@ -103,6 +108,7 @@ function AlertsPage() {
             region: search.region,
             severity: search.severity,
             category: search.category,
+            tier: search.tier,
             status: search.status,
           }}
         />

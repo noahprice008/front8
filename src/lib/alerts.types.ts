@@ -8,7 +8,7 @@ export type AlertCategory =
   | "official_warning"
   | "other";
 
-export type AlertTier = "official" | "verified_news";
+export type AlertTier = "official" | "verified_news" | "community_security";
 
 export type AlertStatusFilter = "active" | "expired";
 
@@ -42,11 +42,15 @@ export const CATEGORY_VALUES = Object.keys(CATEGORY_LABELS) as AlertCategory[];
 export const TIER_LABELS: Record<AlertTier, string> = {
   official: "Official",
   verified_news: "Verified news",
+  community_security: "Trusted community security source",
 };
+
+export const TIER_VALUES = Object.keys(TIER_LABELS) as AlertTier[];
 
 /** Tier labels shown on the alert detail page. */
 export function tierStatusLabel(tier: AlertTier, authority: string | null): string {
   if (tier === "official") return "Official source";
+  if (tier === "community_security") return "Trusted community security source";
   return `Automated summary of reporting by ${authority ?? "verified publishers"}`;
 }
 

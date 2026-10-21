@@ -27,7 +27,9 @@ export function SourceCitation({
         {tierLabel(tier)} tier —{" "}
         {tier === "official"
           ? "issued or confirmed by an official authority."
-          : "drawn from reporting by verified news publishers."}
+          : tier === "community_security"
+            ? "reported by a vetted community security network."
+            : "drawn from reporting by verified news publishers."}
       </p>
       <ul className="mt-2 space-y-1.5">
         {deduped.map((source, i) => (
