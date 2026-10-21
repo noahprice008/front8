@@ -425,10 +425,26 @@ export type Database = {
           lat: number | null
           lng: number | null
           name: string | null
+          parent_id: string | null
           slug: string | null
           top_severity: Database["public"]["Enums"]["alert_severity"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "regions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "region_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -438,6 +454,7 @@ export type Database = {
           p_category: Database["public"]["Enums"]["alert_category"]
           p_expires_at: string
           p_level?: number
+          p_published_at?: string
           p_region_slug: string
           p_severity: Database["public"]["Enums"]["alert_severity"]
           p_summary: string
