@@ -1,36 +1,32 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
 import { markerStyleFor, type MapRegion, type MarkerStyle } from "@/lib/alerts.types";
 
-const TILE_URLS = {
-  light:
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-  dark:
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-};
-const TILE_ATTRIBUTION = "&copy; Esri";
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+type Basemap = "tactical" | "light" | "satellite" | "terrain";
 
-const HTML_ESCAPES: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
+const BASEMAPS: Record<Basemap, { label: string; url: string; labels?: string }> = {
+  tactical: { label: "Tactical", url: `${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`, labels: `${ESRI}/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}` },
+  light: { label: "Light", url: `${ESRI}/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`, labels: `${ESRI}/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}` },
+  satellite: { label: "Satellite", url: `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`, labels: `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}` },
+  terrain: { label: "Terrain", url: `${ESRI}/World_Topo_Map/MapServer/tile/{z}/{y}/{x}` },
 };
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c);
-}
+const HOME: [number, number] = [31, 12];
+const HOME_ZOOM = 2;
 
-function radiusFor(style: MarkerStyle, activeAlerts: number): number {
+const HTML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const escapeHtml = (v: string) => v.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c);
+
+function radiusFor(style: MarkerStyle, n: number): number {
   switch (style) {
     case "critical":
     case "high":
-      return Math.min(18 + activeAlerts * 2.5, 38);
+      return Math.min(18 + n * 2.5, 38);
     case "moderate":
     case "elevated":
-      return Math.min(16 + activeAlerts * 2, 32);
+      return Math.min(16 + n * 2, 32);
     case "clear":
       return 13;
     default:
@@ -40,101 +36,70 @@ function radiusFor(style: MarkerStyle, activeAlerts: number): number {
 
 function popupHtml(region: MapRegion): string {
   const name = escapeHtml(region.name);
-  if (!region.covered) {
-    return `<strong>${name}</strong><p class="leaflet-bubble-note">Not yet monitored.</p>`;
-  }
-
+  const coords =
+    region.lat != null && region.lng != null
+      ? `<p class="leaflet-bubble-coords">${region.lat.toFixed(2)}°, ${region.lng.toFixed(2)}°</p>`
+      : "";
+  if (!region.covered) return `<strong>${name}</strong>${coords}<p class="leaflet-bubble-note">Not yet monitored.</p>`;
   const parts: string[] = [];
   if (region.activeAlerts > 0) {
-    parts.push(
-      `<p class="leaflet-bubble-note">${region.activeAlerts} active alert${
-        region.activeAlerts === 1 ? "" : "s"
-      } · top severity: ${escapeHtml(region.topSeverity ?? "info")}</p>`,
-    );
+    parts.push(`<p class="leaflet-bubble-note">${region.activeAlerts} active alert${region.activeAlerts === 1 ? "" : "s"} · top severity: ${escapeHtml(region.topSeverity ?? "info")}</p>`);
     if (region.latestAlerts.length > 0) {
       parts.push("<ul>");
-      for (const alert of region.latestAlerts) {
-        parts.push(
-          `<li><a href="/alerts/${encodeURIComponent(alert.id)}">${escapeHtml(alert.title)}</a></li>`,
-        );
-      }
+      for (const a of region.latestAlerts) parts.push(`<li><a href="/alerts/${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a></li>`);
       parts.push("</ul>");
     }
   } else {
-    parts.push(
-      '<p class="leaflet-bubble-note">No current alerts. This does not guarantee safety.</p>',
-      '<p class="leaflet-bubble-note">Travel advisories are listed on the <a href="/travel">Travel advice</a> page.</p>',
-    );
+    parts.push('<p class="leaflet-bubble-note">No current alerts. This does not guarantee safety.</p>');
   }
-  parts.push(
-    `<p class="leaflet-bubble-note"><a href="/alerts?region=${encodeURIComponent(region.slug)}">View all alerts for ${name}</a></p>`,
-  );
-  return `<strong>${name}</strong>${parts.join("")}`;
+  parts.push(`<p class="leaflet-bubble-note"><a href="/alerts?region=${encodeURIComponent(region.slug)}">View all alerts for ${name}</a></p>`);
+  return `<strong>${name}</strong>${coords}${parts.join("")}`;
 }
 
-export default function WorldMapClient({
-  regions,
-  feedDelay,
-}: {
-  regions: MapRegion[];
-  feedDelay: boolean;
-}) {
+export default function WorldMapClient({ regions, feedDelay }: { regions: MapRegion[]; feedDelay: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const tilesRef = useRef<TileLayer[]>([]);
+  const [ready, setReady] = useState(false);
+  const [basemap, setBasemap] = useState<Basemap>("tactical");
+  const [cursor, setCursor] = useState<string>("--");
+  const [zoom, setZoom] = useState(HOME_ZOOM);
+  const [full, setFull] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    let observer: MutationObserver | null = null;
-
     (async () => {
       const L = (await import("leaflet")).default;
       const container = containerRef.current;
       if (cancelled || !container) return;
 
       const map = L.map(container, {
-        scrollWheelZoom: false,
+        scrollWheelZoom: "center",
         zoomControl: false,
         worldCopyJump: true,
         minZoom: 2,
-        maxZoom: 12,
+        maxZoom: 18,
+        zoomSnap: 0.5,
         attributionControl: false,
-      }).setView([31, 12], 2);
+      }).setView(HOME, HOME_ZOOM);
+      // Only zoom with the wheel once the user clicks the map, so the page still scrolls.
+      map.scrollWheelZoom.disable();
+      map.on("click", () => map.scrollWheelZoom.enable());
+      map.on("mouseout", () => map.scrollWheelZoom.disable());
       mapRef.current = map;
       L.control.zoom({ position: "bottomright" }).addTo(map);
+      L.control.scale({ position: "bottomright", imperial: false }).addTo(map);
 
-      const makeTiles = (dark: boolean): TileLayer =>
-        L.tileLayer(dark ? TILE_URLS.dark : TILE_URLS.light, {
-          attribution: TILE_ATTRIBUTION,
-          subdomains: "abcd",
-          maxZoom: 19,
-        });
-
-      let tiles = makeTiles(document.documentElement.classList.contains("dark"));
-      tiles.addTo(map);
-
-      observer = new MutationObserver(() => {
-        map.removeLayer(tiles);
-        tiles = makeTiles(document.documentElement.classList.contains("dark"));
-        tiles.addTo(map);
-      });
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
+      map.on("mousemove", (e) => setCursor(`${e.latlng.lat.toFixed(3)}°, ${e.latlng.lng.toFixed(3)}°`));
+      map.on("mouseout", () => setCursor("--"));
 
       const DETAIL_ZOOM = 4;
-      const parentsWithChildren = new Set(
-        regions.map((r) => r.parentId).filter((id): id is string => !!id),
-      );
+      const parentsWithChildren = new Set(regions.map((r) => r.parentId).filter((id): id is string => !!id));
       const overview: LayerGroup = L.layerGroup();
       const detail: LayerGroup = L.layerGroup();
       for (const region of regions) {
-        const markers = region.parentId
-          ? detail
-          : parentsWithChildren.has(region.id)
-            ? overview
-            : null;
         if (region.lat == null || region.lng == null) continue;
+        const group = region.parentId ? detail : parentsWithChildren.has(region.id) ? overview : null;
         const realStyle = markerStyleFor(region);
         const style: string = feedDelay ? "stale" : realStyle;
         const radius = radiusFor(realStyle, region.activeAlerts);
@@ -146,17 +111,20 @@ export default function WorldMapClient({
           iconAnchor: [radius, radius],
           popupAnchor: [0, -radius],
         });
-        L.marker([region.lat, region.lng], {
+        const lat = region.lat;
+        const lng = region.lng;
+        const marker = L.marker([lat, lng], {
           icon,
           keyboard: true,
           title: feedDelay ? `${region.name} (feed delayed)` : region.name,
         })
-          .addTo(markers ?? map)
+          .addTo(group ?? map)
           .bindPopup(popupHtml(region), { maxWidth: 300 });
+        marker.on("dblclick", () => map.flyTo([lat, lng], region.parentId ? 6 : 5, { duration: 0.8 }));
       }
       const syncZoom = () => {
-        const zoomedIn = map.getZoom() >= DETAIL_ZOOM;
-        if (zoomedIn) {
+        setZoom(map.getZoom());
+        if (map.getZoom() >= DETAIL_ZOOM) {
           map.removeLayer(overview);
           detail.addTo(map);
         } else {
@@ -166,22 +134,90 @@ export default function WorldMapClient({
       };
       syncZoom();
       map.on("zoomend", syncZoom);
+      setReady(true);
     })();
 
     return () => {
       cancelled = true;
-      observer?.disconnect();
       mapRef.current?.remove();
       mapRef.current = null;
+      tilesRef.current = [];
+      setReady(false);
     };
   }, [regions, feedDelay]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    (async () => {
+      const L = (await import("leaflet")).default;
+      tilesRef.current.forEach((t) => map.removeLayer(t));
+      const cfg = BASEMAPS[basemap];
+      const layers = [L.tileLayer(cfg.url, { maxZoom: 19, maxNativeZoom: 17 })];
+      if (cfg.labels) layers.push(L.tileLayer(cfg.labels, { maxZoom: 19, maxNativeZoom: 16, pane: "overlayPane" }));
+      layers.forEach((l) => l.addTo(map));
+      tilesRef.current = layers;
+    })();
+  }, [basemap, ready]);
+
+  useEffect(() => {
+    const t = setTimeout(() => mapRef.current?.invalidateSize(), 50);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [full]);
+
+  const btn =
+    "rounded-sm px-2.5 py-1 font-display text-[0.6875rem] font-semibold uppercase tracking-wider transition-colors";
+
   return (
-    <div
-      ref={containerRef}
-      className="h-[420px] w-full sm:h-[520px] lg:h-[680px]"
-      role="application"
-      aria-label="World map showing monitored regions and active alerts. The same information is available as a text list."
-    />
+    <div className={full ? "fixed inset-0 z-[1000] bg-background" : "relative"}>
+      <div
+        ref={containerRef}
+        className={`tactical-map w-full ${full ? "h-full" : "h-[420px] sm:h-[520px] lg:h-[680px]"}`}
+        role="application"
+        aria-label="World map showing monitored regions and active alerts. The same information is available as a text list."
+      />
+      <div className="pointer-events-none absolute inset-0 z-[600] tactical-grid" aria-hidden="true" />
+
+      <div className="absolute right-3 top-3 z-[700] flex flex-col items-end gap-2">
+        <div className="tactical-panel flex gap-1 p-1" role="group" aria-label="Map style">
+          {(Object.keys(BASEMAPS) as Basemap[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={basemap === k}
+              onClick={() => setBasemap(k)}
+              className={`${btn} ${basemap === k ? "bg-brand-accent text-brand-accent-foreground" : "text-foreground hover:bg-accent"}`}
+            >
+              {BASEMAPS[k].label}
+            </button>
+          ))}
+        </div>
+        <div className="tactical-panel flex gap-1 p-1">
+          <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(HOME, HOME_ZOOM, { duration: 0.8 })}>
+            Reset view
+          </button>
+          <button type="button" className={`${btn} text-foreground hover:bg-accent`} aria-pressed={full} onClick={() => setFull((f) => !f)}>
+            {full ? "Exit full screen" : "Full screen"}
+          </button>
+        </div>
+      </div>
+
+      <div className="tactical-panel absolute left-3 top-3 z-[700] px-2.5 py-1.5 font-mono text-[0.6875rem] text-foreground" aria-live="off">
+        <span className="text-muted-foreground">POS </span>
+        {cursor}
+        <span className="ml-3 text-muted-foreground">ZOOM </span>
+        {zoom.toFixed(1)}
+      </div>
+      {full && (
+        <p className="tactical-panel absolute bottom-3 left-1/2 z-[700] -translate-x-1/2 px-3 py-1 text-[0.6875rem] text-muted-foreground">
+          Press Esc to exit · Double-click a bubble to zoom in
+        </p>
+      )}
+    </div>
   );
 }
