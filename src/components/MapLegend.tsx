@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 const DOTS: { key: string; label: string; className: string }[] = [
   { key: "critical", label: "Critical", className: "bg-sev-critical map-bubble map-bubble--critical" },
   { key: "high", label: "High", className: "bg-sev-high map-bubble map-bubble--high" },
