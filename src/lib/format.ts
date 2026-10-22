@@ -50,3 +50,30 @@ export function formatRelative(iso: string | null | undefined): string {
   if (hours < 48) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
 }
+
+/** "expires in 18h" / "expires in 3d" / "expired". */
+export function formatExpiresIn(iso: string, now = Date.now()): string {
+  const ms = new Date(iso).getTime() - now;
+  if (ms <= 0) return "expired";
+  const h = Math.floor(ms / 3_600_000);
+  if (h < 1) return `expires in ${Math.max(1, Math.floor(ms / 60_000))}m`;
+  if (h < 48) return `expires in ${h}h`;
+  return `expires in ${Math.floor(h / 24)}d`;
+}
+
+/** Normalised title used to drop near-duplicate stories. */
+export function storyKey(title: string): string {
+  return title.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim();
+}
+
+const LANG_NAMES: Record<string, string> = { en: "English", fr: "French", de: "German", es: "Spanish", it: "Italian", nl: "Dutch", pt: "Portuguese", sv: "Swedish", pl: "Polish", ru: "Russian", uk: "Ukrainian", hu: "Hungarian", cs: "Czech", da: "Danish", no: "Norwegian", fi: "Finnish", el: "Greek", tr: "Turkish", ar: "Arabic", he: "Hebrew", ro: "Romanian", be: "Belarusian", hr: "Croatian", sk: "Slovak", bg: "Bulgarian" };
+export function languageName(code: string | null | undefined): string {
+  if (!code) return "another language";
+  return LANG_NAMES[code.toLowerCase().slice(0, 2)] ?? code.toUpperCase();
+}
+
+/** Plain-language verification label from the number of independent outlets. */
+export function verificationText(v: "confirmed" | "developing", outlets: number): string {
+  if (v === "developing") return "Developing: single source, unconfirmed";
+  return outlets >= 2 ? `Confirmed by ${outlets} independent outlets` : "Confirmed by multiple independent outlets";
+}

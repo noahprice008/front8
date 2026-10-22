@@ -132,9 +132,11 @@ export interface AlertListItem {
   regionName: string;
   regionSlug: string;
   verification: AlertVerification;
+  /** Independent outlets that reported this alert (list views). */
+  sources?: { publisher: string | null; url: string }[];
 }
 
-export interface AlertDetail extends AlertListItem {
+export interface AlertDetail extends Omit<AlertListItem, "sources"> {
   primarySourceUrl: string;
   sources: { publisher: string | null; url: string }[];
 }
@@ -178,6 +180,8 @@ export interface Headline {
   /** Activity classification label, null for general coverage. */
   activityLabel?: string | null;
   nearInstitution?: boolean;
+  language?: string | null;
+  titleOriginal?: string | null;
 }
 
 export interface TickerItem {
@@ -189,4 +193,6 @@ export interface TickerItem {
   publishedAt: string | null;
   /** Short tag such as PROTEST, VIOLENCE; defaults by kind. */
   tag?: string;
+  regionName?: string | null;
+  translated?: boolean;
 }
