@@ -500,6 +500,42 @@
   background: transparent;
 }
 
+/* ---- Climate posture ring (map) ---- */
+.map-posture {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  pointer-events: none;
+  border: 2px solid var(--color-sev-moderate);
+  box-shadow: 0 0 14px 2px color-mix(in oklab, var(--color-sev-moderate) 55%, transparent);
+  animation: posture-pulse 2.6s ease-in-out infinite;
+}
+.map-posture--high { border-color: var(--color-sev-high); box-shadow: 0 0 18px 4px color-mix(in oklab, var(--color-sev-high) 60%, transparent); }
+.map-posture--critical { border-color: var(--color-sev-critical); box-shadow: 0 0 22px 6px color-mix(in oklab, var(--color-sev-critical) 65%, transparent); animation-duration: 1.4s; }
+@keyframes posture-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-posture { animation: none; }
+}
+.map-legend-posture {
+  border: 2px solid var(--color-sev-high);
+  background: transparent;
+  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--color-sev-high) 60%, transparent);
+}
+.leaflet-bubble-posture {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 4px 0;
+  color: var(--color-sev-clear);
+}
+.leaflet-bubble-posture--elevated { color: var(--color-sev-moderate); }
+.leaflet-bubble-posture--high { color: var(--color-sev-high); }
+.leaflet-bubble-posture--critical { color: var(--color-sev-critical); }
+
 /* ---------- Tactical UI system ---------- */
 @utility telemetry {
   font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
