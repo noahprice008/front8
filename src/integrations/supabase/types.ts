@@ -180,6 +180,7 @@ export type Database = {
           id: string
           incident_checked_at: string | null
           kept: boolean
+          language: string | null
           published_at: string | null
           publisher: string | null
           region: string | null
@@ -188,7 +189,9 @@ export type Database = {
           source_type: string | null
           tier: number | null
           title: string
+          title_original: string | null
           topic: string | null
+          translated_at: string | null
           url: string
         }
         Insert: {
@@ -196,6 +199,7 @@ export type Database = {
           id?: string
           incident_checked_at?: string | null
           kept?: boolean
+          language?: string | null
           published_at?: string | null
           publisher?: string | null
           region?: string | null
@@ -204,7 +208,9 @@ export type Database = {
           source_type?: string | null
           tier?: number | null
           title: string
+          title_original?: string | null
           topic?: string | null
+          translated_at?: string | null
           url: string
         }
         Update: {
@@ -212,6 +218,7 @@ export type Database = {
           id?: string
           incident_checked_at?: string | null
           kept?: boolean
+          language?: string | null
           published_at?: string | null
           publisher?: string | null
           region?: string | null
@@ -220,7 +227,9 @@ export type Database = {
           source_type?: string | null
           tier?: number | null
           title?: string
+          title_original?: string | null
           topic?: string | null
+          translated_at?: string | null
           url?: string
         }
         Relationships: []
@@ -284,6 +293,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      news_editions: {
+        Row: {
+          ceid: string
+          gl: string
+          hl: string
+          iso: string
+          lang: string
+        }
+        Insert: {
+          ceid: string
+          gl: string
+          hl: string
+          iso: string
+          lang: string
+        }
+        Update: {
+          ceid?: string
+          gl?: string
+          hl?: string
+          iso?: string
+          lang?: string
+        }
+        Relationships: []
+      }
+      news_lang_terms: {
+        Row: {
+          lang: string
+          terms: string
+        }
+        Insert: {
+          lang: string
+          terms: string
+        }
+        Update: {
+          lang?: string
+          terms?: string
+        }
+        Relationships: []
       }
       publisher_allowlist: {
         Row: {
@@ -524,7 +572,20 @@ export type Database = {
       }
     }
     Functions: {
+      add_zone: {
+        Args: {
+          p_iso: string
+          p_lat: number
+          p_lng: number
+          p_name: string
+          p_parent_slug?: string
+          p_slug: string
+        }
+        Returns: string
+      }
+      apply_translations: { Args: { p_rows: Json }; Returns: Json }
       ensure_publisher_source: { Args: { p_name: string }; Returns: string }
+      gdelt_region_groups: { Args: { p_size?: number }; Returns: Json }
       headlines_unseen: { Args: { p_articles: Json }; Returns: Json }
       incident_work: { Args: { p_limit?: number }; Returns: Json }
       ingest_headline: {
@@ -571,8 +632,10 @@ export type Database = {
         Args: { p_payload: Json; p_url: string }
         Returns: Json
       }
+      news_query_plan: { Args: never; Returns: Json }
       require_service_role: { Args: never; Returns: undefined }
       store_headlines: { Args: { p_rows: Json }; Returns: Json }
+      translation_work: { Args: { p_limit?: number }; Returns: Json }
     }
     Enums: {
       alert_category:
