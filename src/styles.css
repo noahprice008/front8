@@ -499,3 +499,44 @@
   border: 2px dashed #d97706;
   background: transparent;
 }
+
+/* ---------- Tactical UI system ---------- */
+@utility telemetry {
+  font-family: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-brand-accent);
+}
+
+@utility hud-frame {
+  position: relative;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    border-color: var(--color-brand-accent);
+  }
+  &::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+  }
+  &::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+  }
+}
+
+body {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--color-brand-accent) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--color-brand-accent) 5%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+}

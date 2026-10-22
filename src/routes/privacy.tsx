@@ -54,12 +54,13 @@ function PrivacyPage() {
           </h2>
           <p className="mt-2">
             Questions about this statement:{" "}
-            <a
-              href="mailto:privacy@theeighthfront.org"
+            <Link
+              to="/contact"
+              search={{ context: "Privacy question" }}
               className="text-primary underline underline-offset-2 hover:opacity-80"
             >
-              privacy@theeighthfront.org
-            </a>
+              Contact us
+            </Link>
             .
           </p>
         </section>

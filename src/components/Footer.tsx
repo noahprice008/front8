@@ -34,6 +34,9 @@ export function Footer() {
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground">
               Privacy
             </Link>
+            <Link to="/contact" className="text-muted-foreground hover:text-foreground">
+              Contact
+            </Link>
           </nav>
         </div>
         <p className="mt-6 border-t border-border pt-4 text-[0.6875rem] leading-relaxed text-muted-foreground">

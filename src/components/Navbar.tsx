@@ -83,10 +83,22 @@ export function Navbar() {
               </Link>
             );
           })}
+          <Link
+            to="/contact"
+            className="ml-1 inline-flex h-8 items-center rounded-sm border border-brand-accent px-3 font-display text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
+          >
+            Contact
+          </Link>
           <ThemeToggle />
         </nav>
         {/* Mobile: theme toggle + menu button */}
         <div className="flex items-center gap-2 sm:hidden">
+          <Link
+            to="/contact"
+            className="inline-flex h-9 items-center rounded-sm border border-brand-accent px-2.5 font-display text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-brand-accent"
+          >
+            Contact
+          </Link>
           <ThemeToggle />
           <button
             type="button"
