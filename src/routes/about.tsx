@@ -188,12 +188,12 @@ function AboutPage() {
         <h2 className="font-display text-lg font-semibold text-foreground">Contact</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           Corrections and feedback:{" "}
-          <a
-            href="mailto:corrections@theeighthfront.org"
+          <Link
+            to="/contact"
             className="text-primary underline underline-offset-2 hover:opacity-80"
           >
-            corrections@theeighthfront.org
-          </a>
+            Contact us
+          </Link>
           . See also our{" "}
           <Link to="/privacy" className="text-primary underline underline-offset-2 hover:opacity-80">
             privacy statement

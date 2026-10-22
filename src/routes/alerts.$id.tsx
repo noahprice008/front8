@@ -162,12 +162,13 @@ function AlertDetailPage() {
 
       <p className="mt-4 text-sm text-muted-foreground">
         Spotted a mistake?{" "}
-        <a
-          href="mailto:corrections@theeighthfront.org?subject=Alert correction"
+        <Link
+          to="/contact"
+          search={{ context: `Correction: ${alert.title}`.slice(0, 200) }}
           className="text-primary underline underline-offset-2 hover:opacity-80"
         >
           Report an error
-        </a>{" "}
+        </Link>{" "}
         — corrections are reviewed before the alert is updated.
       </p>
     </div>
