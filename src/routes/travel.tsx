@@ -4,6 +4,7 @@ import { RouteError } from "@/components/RouteError";
 import { getTravelData } from "@/lib/alerts.functions";
 import type { AlertTier } from "@/lib/alerts.types";
 import { formatUtc } from "@/lib/format";
+import { getSecurityContact } from "@/lib/security-directory";
 
 const travelQuery = queryOptions({
   queryKey: ["travel"],

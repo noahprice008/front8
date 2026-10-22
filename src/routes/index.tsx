@@ -6,6 +6,35 @@ import { RouteError } from "@/components/RouteError";
 import { WorldMap } from "@/components/map/WorldMap";
 import { getLatestAlerts, getMapData } from "@/lib/alerts.functions";
 import { formatRelative, formatUtc } from "@/lib/format";
+import { computeThreatcon, type ThreatconLevel } from "@/lib/threatcon";
+import type { MapRegion } from "@/lib/alerts.types";
+
+const LEVEL_CLS: Record<ThreatconLevel, string> = {
+  CRITICAL: "text-sev-critical border-sev-critical",
+  HIGH: "text-sev-high border-sev-high",
+  ELEVATED: "text-sev-moderate border-sev-moderate",
+  GUARDED: "text-sev-clear border-sev-clear",
+};
+
+function ThreatconMeter({ regions }: { regions: MapRegion[] }) {
+  const { level, counts } = computeThreatcon(regions);
+  const levels: ThreatconLevel[] = ["CRITICAL", "HIGH", "ELEVATED", "GUARDED"];
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border border-border bg-card px-4 py-3" role="status" aria-label={`Global posture ${level}`}>
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Threatcon</span>
+        <span className={`border px-2 py-0.5 font-display text-xs font-bold uppercase tracking-[0.2em] ${LEVEL_CLS[level]}`}>{level}</span>
+      </div>
+      <ul className="flex flex-wrap gap-4 font-mono text-[0.6875rem] uppercase tracking-wider">
+        {levels.map((l) => (
+          <li key={l} className="text-muted-foreground">
+            <span className={LEVEL_CLS[l].split(" ")[0]}>{counts[l]}</span> {l} zones
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 const mapQuery = queryOptions({
   queryKey: ["map-data"],
@@ -91,6 +120,7 @@ function HomePage() {
             </dd>
           </div>
         </dl>
+        <ThreatconMeter regions={data.regions} />
       </section>
 
       {/* World map */}

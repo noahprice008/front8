@@ -85,7 +85,7 @@ export function Navbar() {
           })}
           <Link
             to="/contact"
-            className="ml-1 inline-flex h-8 items-center rounded-sm border border-brand-accent px-3 font-display text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
+            className="ml-1 inline-flex h-7 items-center rounded-sm border border-brand-accent px-2.5 font-display text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
           >
             Contact
           </Link>
@@ -95,7 +95,7 @@ export function Navbar() {
         <div className="flex items-center gap-2 sm:hidden">
           <Link
             to="/contact"
-            className="inline-flex h-9 items-center rounded-sm border border-brand-accent px-2.5 font-display text-[0.65rem] font-semibold uppercase tracking-[0.15em] text-brand-accent"
+            className="inline-flex h-7 items-center rounded-sm border border-brand-accent px-2 font-display text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-brand-accent"
           >
             Contact
           </Link>
