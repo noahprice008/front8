@@ -122,7 +122,11 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         const group = region.parentId ? detail : parentsWithChildren.has(region.id) ? overview : null;
         const zone = zoneById.get(region.id);
         const realStyle = markerStyleFor(region);
-        const style: string = feedDelay ? "stale" : realStyle;
+        const climateStyle =
+          showClimate && zone && region.activeAlerts === 0 && zone.posture !== "MONITORED"
+            ? zone.posture === "ELEVATED" ? "moderate" : "high"
+            : null;
+        const style: string = feedDelay ? "stale" : climateStyle ?? realStyle;
         const radius = radiusFor(realStyle, region.activeAlerts) + (showClimate && zone ? Math.min(zone.activityCount, 10) * 0.6 : 0);
         const size = radius * 2;
         const posture = showClimate && zone && zone.posture !== "MONITORED" ? `<span class="map-posture map-posture--${zone.posture.toLowerCase()}" aria-hidden="true"></span>` : "";

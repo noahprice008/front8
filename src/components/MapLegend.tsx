@@ -7,7 +7,7 @@ const DOTS: { key: string; label: string; className: string }[] = [
   { key: "elevated", label: "Info / Low (active alerts)", className: "bg-sev-info map-bubble map-bubble--elevated" },
   { key: "clear", label: "No current alerts", className: "bg-sev-clear map-bubble map-bubble--clear" },
   { key: "unmonitored", label: "Not yet monitored", className: "map-bubble map-bubble--unmonitored" },
-  { key: "posture-high", label: "Outer ring: zone climate posture (High / Elevated)", className: "map-legend-posture" },
+  { key: "posture-high", label: "Glowing ring: zone climate posture from recent activity", className: "map-legend-posture" },
   { key: "developing", label: "Developing report: single source, not yet confirmed", className: "map-legend-dev" },
 ];
 
