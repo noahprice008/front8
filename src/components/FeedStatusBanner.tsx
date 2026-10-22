@@ -26,7 +26,7 @@ export function FeedStatusBanner({
             <path d="M12 8v4M12 16h.01" />
           </svg>
           <p className="text-sm font-medium text-foreground">
-            Feed delay: data may be out of date.
+            Data feeds are delayed.
           </p>
         </div>
       )}

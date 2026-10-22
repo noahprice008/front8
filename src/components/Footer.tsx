@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { BrandLogo } from "./BrandLogo";
+import { FreshnessStamp } from "./FreshnessStamp";
 
 export function Footer() {
   return (
@@ -20,6 +21,7 @@ export function Footer() {
               This service complements, and does not replace, official emergency
               guidance. In an emergency contact local emergency services.
             </p>
+            <div className="mt-3"><FreshnessStamp /></div>
           </div>
           <nav aria-label="Footer" className="flex flex-col gap-1.5 text-sm">
             <Link to="/alerts" className="text-muted-foreground hover:text-foreground">
@@ -30,6 +32,9 @@ export function Footer() {
             </Link>
             <Link to="/about" className="text-muted-foreground hover:text-foreground">
               About
+            </Link>
+            <Link to="/how-it-works" className="text-muted-foreground hover:text-foreground">
+              How it works
             </Link>
             <Link to="/privacy" className="text-muted-foreground hover:text-foreground">
               Privacy
