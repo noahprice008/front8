@@ -17,6 +17,9 @@ const BASEMAPS: Record<Basemap, { label: string; url: string; labels?: string }>
 
 const HOME: [number, number] = [31, 12];
 const HOME_ZOOM = 2;
+/** Phones show ~140° of longitude at zoom 2, so centre on the Atlantic to keep North America and Europe in view. */
+const MOBILE_HOME: [number, number] = [42, -32];
+const homeView = (): [number, number] => (typeof window !== "undefined" && window.innerWidth < 640 ? MOBILE_HOME : HOME);
 
 const HTML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 const escapeHtml = (v: string) => v.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c);
@@ -84,6 +87,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
   const [zoom, setZoom] = useState(HOME_ZOOM);
   const [full, setFull] = useState(false);
   const [showClimate, setShowClimate] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +104,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         maxZoom: 18,
         zoomSnap: 0.5,
         attributionControl: false,
-      }).setView(HOME, HOME_ZOOM);
+      }).setView(homeView(), HOME_ZOOM);
       // Only zoom with the wheel once the user clicks the map, so the page still scrolls.
       map.scrollWheelZoom.disable();
       map.on("click", () => map.scrollWheelZoom.enable());
@@ -199,20 +203,30 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
   }, [full]);
 
   const btn =
-    "rounded-sm px-2.5 py-1 font-display text-[0.6875rem] font-semibold uppercase tracking-wider transition-colors";
+    "rounded-sm px-2 py-1 font-display text-[0.625rem] sm:px-2.5 sm:text-[0.6875rem] font-semibold uppercase tracking-wider transition-colors";
 
   return (
     <div className={full ? "fixed inset-0 z-[1000] bg-background" : "relative"}>
       <div
         ref={containerRef}
-        className={`tactical-map w-full ${full ? "h-full" : "h-[420px] sm:h-[520px] lg:h-[680px]"}`}
+        className={`tactical-map w-full ${full ? "h-full" : "h-[62svh] min-h-[380px] sm:h-[520px] sm:min-h-0 lg:h-[680px]"}`}
         role="application"
         aria-label="World map showing monitored regions and active alerts. The same information is available as a text list."
       />
       <div className="pointer-events-none absolute inset-0 z-[600] tactical-grid" aria-hidden="true" />
 
-      <div className="absolute right-3 top-3 z-[700] flex flex-col items-end gap-2">
-        <div className="tactical-panel flex gap-1 p-1" role="group" aria-label="Map style">
+      <div className="absolute right-2 top-2 z-[700] flex flex-col items-end gap-1.5 sm:right-3 sm:top-3 sm:gap-2">
+        <button
+          type="button"
+          aria-expanded={menuOpen}
+          aria-label="Map controls"
+          onClick={() => setMenuOpen((v) => !v)}
+          className="tactical-panel flex h-8 items-center gap-1.5 px-2.5 font-display text-[0.625rem] font-semibold uppercase tracking-wider text-foreground sm:hidden"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3 2 8l10 5 10-5-10-5Z" /><path d="m2 16 10 5 10-5" /></svg>
+          Layers
+        </button>
+        <div className={`${menuOpen ? "flex" : "hidden"} tactical-panel flex-wrap justify-end gap-1 p-1 sm:flex`} role="group" aria-label="Map style">
           {(Object.keys(BASEMAPS) as Basemap[]).map((k) => (
             <button
               key={k}
@@ -225,11 +239,11 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
             </button>
           ))}
         </div>
-        <div className="tactical-panel flex gap-1 p-1">
+        <div className={`${menuOpen ? "flex" : "hidden"} tactical-panel flex-wrap justify-end gap-1 p-1 sm:flex`}>
           <button type="button" aria-pressed={showClimate} onClick={() => setShowClimate((v) => !v)} className={`${btn} ${showClimate ? "bg-brand-accent text-brand-accent-foreground" : "text-foreground hover:bg-accent"}`}>
             Climate layer
           </button>
-          <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(HOME, HOME_ZOOM, { duration: 0.8 })}>
+          <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(homeView(), HOME_ZOOM, { duration: 0.8 })}>
             Reset view
           </button>
           <button type="button" className={`${btn} text-foreground hover:bg-accent`} aria-pressed={full} onClick={() => setFull((f) => !f)}>
@@ -238,14 +252,14 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         </div>
       </div>
 
-      <div className="tactical-panel absolute left-3 top-3 z-[700] px-2.5 py-1.5 font-mono text-[0.6875rem] text-foreground" aria-live="off">
+      <div className="tactical-panel absolute left-3 top-3 z-[700] hidden px-2.5 sm:block py-1.5 font-mono text-[0.6875rem] text-foreground" aria-live="off">
         <span className="text-muted-foreground">POS </span>
         {cursor}
         <span className="ml-3 text-muted-foreground">ZOOM </span>
         {zoom.toFixed(1)}
       </div>
       {full && (
-        <p className="tactical-panel absolute bottom-3 left-1/2 z-[700] -translate-x-1/2 px-3 py-1 text-[0.6875rem] text-muted-foreground">
+        <p className="tactical-panel absolute bottom-3 left-1/2 hidden sm:block z-[700] -translate-x-1/2 px-3 py-1 text-[0.6875rem] text-muted-foreground">
           Press Esc to exit · Double-click a bubble to zoom in
         </p>
       )}

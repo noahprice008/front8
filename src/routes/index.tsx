@@ -62,9 +62,9 @@ function HomePage() {
   );
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto flex max-w-[1440px] flex-col px-4 py-4 sm:block sm:px-6 sm:py-10 lg:px-8">
       {/* Hero */}
-      <section className="max-w-3xl">
+      <section className="order-2 mt-8 max-w-3xl sm:mt-0">
         <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Know the climate. Understand the risk. Stay prepared.
         </h1>
@@ -93,7 +93,7 @@ function HomePage() {
             How this works
           </Link>
         </div>
-        <dl className="mt-8 grid grid-cols-3 gap-4 border-y border-border py-4 text-sm">
+        <dl className="mt-8 grid grid-cols-3 gap-2 sm:gap-4 border-y border-border py-4 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">Regions monitored</dt>
             <dd className="mt-0.5 text-lg font-semibold text-foreground">{monitored}</dd>
@@ -113,13 +113,13 @@ function HomePage() {
       </section>
 
       {/* World map */}
-      <section className="mt-10" aria-label="World map">
+      <section className="order-1 sm:mt-10" aria-label="World map">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="font-display text-xl font-semibold text-foreground">
               Current climate
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
               One zone per monitored region. The outer ring shows each zone's
               climate posture from verified incidents, developing reports and
               recent activity. Click any zone for details.
@@ -134,7 +134,7 @@ function HomePage() {
           </p>
           </div>
         </div>
-        <div className="mt-4 space-y-3">
+        <div className="mt-3 space-y-3 sm:mt-4">
           <FeedStatusBanner
             feedDelay={data.feed.feedDelay}
             autopublishPaused={!data.feed.autopublishEnabled}
@@ -143,10 +143,10 @@ function HomePage() {
         </div>
       </section>
 
-      <ClimateBriefing data={climate} />
+      <div className="order-3 sm:order-none"><ClimateBriefing data={climate} /></div>
 
       {/* Latest alerts */}
-      <section className="mt-12" aria-label="Latest alerts">
+      <section className="order-4 mt-12" aria-label="Latest alerts">
         <div className="flex items-end justify-between gap-4">
           <h2 className="font-display text-xl font-semibold text-foreground">
             Latest alerts
@@ -174,7 +174,7 @@ function HomePage() {
       </section>
 
       {/* How this works */}
-      <section className="mt-12 rounded-xl border border-border bg-card p-6 sm:p-8">
+      <section className="order-5 mt-12 rounded-xl border border-border bg-card p-6 sm:p-8">
         <h2 className="font-display text-xl font-semibold text-foreground">
           How this works
         </h2>

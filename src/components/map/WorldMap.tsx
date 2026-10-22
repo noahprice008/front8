@@ -20,22 +20,22 @@ export function WorldMap({
 
   return (
     <div>
-      <div className="relative overflow-hidden rounded-xl border border-border bg-muted">
+      <div className="relative overflow-hidden -mx-4 border-y border-border bg-muted sm:mx-0 sm:rounded-xl sm:border">
         {mounted ? (
           <Suspense
             fallback={
               <div
                 aria-hidden="true"
-                className="h-[420px] w-full animate-pulse bg-muted sm:h-[520px] lg:h-[680px]"
+                className="h-[62svh] min-h-[380px] w-full animate-pulse bg-muted sm:h-[520px] sm:min-h-0 lg:h-[680px]"
               />
             }
           >
             <WorldMapClient regions={regions} feedDelay={feedDelay} climate={climate ?? []} />
           </Suspense>
         ) : (
-          <div aria-hidden="true" className="h-[420px] w-full bg-muted sm:h-[520px] lg:h-[680px]" />
+          <div aria-hidden="true" className="h-[62svh] min-h-[380px] w-full bg-muted sm:h-[520px] sm:min-h-0 lg:h-[680px]" />
         )}
-        <div className="absolute bottom-3 left-3 z-[700] max-w-[250px]">
+        <div className="absolute bottom-2 left-2 z-[700] max-w-[220px] sm:bottom-3 sm:left-3 sm:max-w-[250px]">
           <MapLegend />
         </div>
       </div>
