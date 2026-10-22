@@ -59,12 +59,11 @@ function TravelPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">
-        Travel advice
+        Travel Advice
       </h1>
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         Links to official government travel advisories for every monitored
-        region, plus a short practical checklist. We link out; we do not
-        paraphrase official advice.
+        region, plus a short practical checklist.
       </p>
 
       <div className="mt-8 space-y-4">
@@ -194,13 +193,13 @@ function TravelPage() {
 
 export function head() { return {
   meta: [
-    { title: "Travel advice — Magen Global" },
+    { title: "Travel Advice — Magen Global" },
     {
       name: "description",
       content:
         "Official government travel advisories for every monitored region, plus a practical safety checklist.",
     },
-    { property: "og:title", content: "Travel advice — Magen Global" },
+    { property: "og:title", content: "Travel Advice — Magen Global" },
     {
       property: "og:description",
       content:
