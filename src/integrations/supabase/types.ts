@@ -181,7 +181,11 @@ export type Database = {
           kept: boolean
           published_at: string | null
           publisher: string | null
+          region: string | null
           region_slug: string | null
+          source: string | null
+          source_type: string | null
+          tier: number | null
           title: string
           topic: string | null
           url: string
@@ -192,7 +196,11 @@ export type Database = {
           kept?: boolean
           published_at?: string | null
           publisher?: string | null
+          region?: string | null
           region_slug?: string | null
+          source?: string | null
+          source_type?: string | null
+          tier?: number | null
           title: string
           topic?: string | null
           url: string
@@ -203,7 +211,11 @@ export type Database = {
           kept?: boolean
           published_at?: string | null
           publisher?: string | null
+          region?: string | null
           region_slug?: string | null
+          source?: string | null
+          source_type?: string | null
+          tier?: number | null
           title?: string
           topic?: string | null
           url?: string
