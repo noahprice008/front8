@@ -13,12 +13,12 @@ const LEVEL_CLS: Record<ThreatconLevel, string> = {
   CRITICAL: "text-sev-critical border-sev-critical",
   HIGH: "text-sev-high border-sev-high",
   ELEVATED: "text-sev-moderate border-sev-moderate",
-  GUARDED: "text-sev-clear border-sev-clear",
+  MONITORED: "text-sev-clear border-sev-clear",
 };
 
 function ThreatconMeter({ regions }: { regions: MapRegion[] }) {
   const { level, counts } = computeThreatcon(regions);
-  const levels: ThreatconLevel[] = ["CRITICAL", "HIGH", "ELEVATED", "GUARDED"];
+  const levels: ThreatconLevel[] = ["CRITICAL", "HIGH", "ELEVATED", "MONITORED"];
   return (
     <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border border-border bg-card px-4 py-3" role="status" aria-label={`Global posture ${level}`}>
       <div className="flex items-center gap-2">
