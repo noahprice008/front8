@@ -55,7 +55,8 @@ export function NewsTicker() {
   const items = data ?? [];
   if (items.length === 0) return null;
 
-  const duration = Math.max(40, items.length * 6);
+  // 20% slower than the original pace (duration × 1.25)
+  const duration = Math.max(50, items.length * 7.5);
 
   return (
     <div className="ticker" role="region" aria-label="Live reports ticker">
