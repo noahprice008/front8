@@ -1,9 +1,10 @@
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { RouteError } from "@/components/RouteError";
 import { getMapData, listHeadlines } from "@/lib/alerts.functions";
 import { HEADLINE_TOPIC_LABELS, HEADLINE_TOPICS } from "@/lib/alerts.types";
-import { formatRelative } from "@/lib/format";
+import { formatRelative, languageName } from "@/lib/format";
 import { ACTIVITY_CATEGORIES, ACTIVITY_LABELS } from "@/lib/climate";
 
 const mapQuery = queryOptions({
@@ -17,19 +18,16 @@ interface NewsSearch {
   topic?: string | undefined;
   activity?: string | undefined;
   window?: string | undefined;
-  page?: number | undefined;
+  lang?: "en" | "translated" | undefined;
 }
 
-function headlinesQuery(deps: {
-  region?: string | undefined;
-  topic?: string | undefined;
-  activity?: string | undefined;
-  window?: string | undefined;
-  page: number;
-}) {
-  return queryOptions({
+type Deps = { region?: string | undefined; topic?: string | undefined; activity?: string | undefined; window?: string | undefined; lang?: "en" | "translated" | undefined };
+function headlinesQuery(deps: Deps) {
+  return infiniteQueryOptions({
     queryKey: ["headlines", deps],
-    queryFn: () => listHeadlines({ data: deps }),
+    queryFn: ({ pageParam }) => listHeadlines({ data: { ...deps, page: pageParam } }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => ((last.page + 1) * last.pageSize < last.total ? last.page + 1 : undefined),
     staleTime: 60_000,
   });
 }
@@ -39,25 +37,16 @@ const validateSearch = (search: Record<string, unknown>): NewsSearch => ({
   topic: typeof search["topic"] === "string" ? search["topic"] : undefined,
   activity: typeof search["activity"] === "string" ? search["activity"] : undefined,
   window: typeof search["window"] === "string" ? search["window"] : undefined,
-  page:
-    typeof search["page"] === "number" && search["page"] > 0
-      ? Math.floor(search["page"])
-      : undefined,
+  lang: search["lang"] === "en" || search["lang"] === "translated" ? search["lang"] : undefined,
 });
 
 export const Route = createFileRoute("/news")({
   head,
   validateSearch,
-  loaderDeps: ({ search: { region, topic, activity, window, page } }) => ({
-    region,
-    topic,
-    activity,
-    window,
-    page: page ?? 0,
-  }),
+  loaderDeps: ({ search: { region, topic, activity, window, lang } }) => ({ region, topic, activity, window, lang }),
   loader: ({ deps, context }) => {
     void context.queryClient.ensureQueryData(mapQuery);
-    return context.queryClient.ensureQueryData(headlinesQuery(deps));
+    return context.queryClient.ensureInfiniteQueryData(headlinesQuery(deps));
   },
   component: NewsPage,
   errorComponent: RouteError,
@@ -70,17 +59,31 @@ function NewsPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { data: mapData } = useSuspenseQuery(mapQuery);
-  const { data: result } = useSuspenseQuery(
-    headlinesQuery({
-      region: search.region,
-      topic: search.topic,
-      activity: search.activity,
-      window: search.window,
-      page: search.page ?? 0,
-    }),
+  const { data: pages, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
+    headlinesQuery({ region: search.region, topic: search.topic, activity: search.activity, window: search.window, lang: search.lang }),
   );
+  const total = pages.pages[0]?.total ?? 0;
+  const items = pages.pages.flatMap((p) => p.items);
+  const groups: { day: string; items: typeof items }[] = [];
+  for (const h of items) {
+    const day = h.publishedAt ? new Date(h.publishedAt).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "GMT" }) : "Undated";
+    const g = groups[groups.length - 1];
+    if (g && g.day === day) g.items.push(h);
+    else groups.push({ day, items: [h] });
+  }
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasNextPage) return;
+    const io = new IntersectionObserver((e) => {
+      if (e[0]?.isIntersecting && !isFetchingNextPage) void fetchNextPage();
+    }, { rootMargin: "400px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const regions: { slug: string; name: string; indent?: boolean }[] = mapData.regions
+  const covered = mapData.regions.filter((r) => r.covered);
+  const regions: { slug: string; name: string; indent?: boolean }[] = covered
     .filter((r) => !r.parentId)
     .flatMap((p) => [
       { slug: p.slug, name: p.name },
@@ -90,16 +93,13 @@ function NewsPage() {
     ]);
   const regionName = (slug: string | null) =>
     regions.find((r) => r.slug === slug)?.name ?? slug ?? "";
-  const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
-
-  const update = (key: "region" | "topic" | "activity" | "window", value: string) => {
+  const update = (key: "region" | "topic" | "activity" | "window" | "lang", value: string) => {
     navigate({
       to: "/news",
       search: (prev) => {
         const next: Record<string, unknown> = { ...prev };
         if (value === "") delete next[key];
         else next[key] = value;
-        delete next["page"];
         return next;
       },
     });
@@ -175,7 +175,17 @@ function NewsPage() {
             <option value="24h">Last 24 hours</option>
           </select>
         </div>
-        {(search.region || search.topic || search.activity || search.window) && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="news-lang" className="text-xs font-medium text-muted-foreground">
+            Language
+          </label>
+          <select id="news-lang" className={SELECT_CLASS} value={search.lang ?? ""} onChange={(e) => update("lang", e.target.value)}>
+            <option value="">All languages</option>
+            <option value="en">English</option>
+            <option value="translated">Translated</option>
+          </select>
+        </div>
+        {(search.region || search.topic || search.activity || search.window || search.lang) && (
           <button
             type="button"
             onClick={() => navigate({ to: "/news", search: {} })}
@@ -187,17 +197,21 @@ function NewsPage() {
       </div>
 
       <p className="mt-6 text-sm font-medium text-foreground" aria-live="polite">
-        {result.total} headline{result.total === 1 ? "" : "s"}
+        {total} headline{total === 1 ? "" : "s"}
       </p>
 
-      {result.items.length === 0 ? (
+      {items.length === 0 ? (
         <div className="mt-3 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
           No headlines match your filters yet. Headlines appear here as they
           are discovered from monitored news sources.
         </div>
       ) : (
-        <ul className="mt-3 space-y-3">
-          {result.items.map((h) => (
+        <div className="mt-3 space-y-6">
+          {groups.map((g) => (
+          <section key={g.day}>
+            <h2 className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">{g.day}</h2>
+        <ul className="mt-2 space-y-3">
+          {g.items.map((h) => (
             <li
               key={h.id}
               className="rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm"
@@ -236,43 +250,32 @@ function NewsPage() {
                 {h.publisher ? `${h.publisher} · ` : ""}
                 {formatRelative(h.publishedAt)}
               </p>
+              {h.language && h.language !== "en" && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  <span>Translated from {languageName(h.language)}</span>
+                  {h.titleOriginal && (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer">Original headline</summary>
+                      <p className="mt-1 italic text-foreground">{h.titleOriginal}</p>
+                    </details>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>
+          </section>
+          ))}
+        </div>
+      )}
+      <div ref={sentinel} className="h-1" />
+      {isFetchingNextPage && <p className="mt-4 text-center text-sm text-muted-foreground">Loading more…</p>}
+      {hasNextPage && !isFetchingNextPage && (
+        <button type="button" onClick={() => void fetchNextPage()} className="mx-auto mt-4 block rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent">
+          Load more
+        </button>
       )}
 
-      {totalPages > 1 && (
-        <nav
-          aria-label="Pagination"
-          className="mt-6 flex items-center justify-between text-sm"
-        >
-          {result.page > 0 ? (
-            <Link
-              to="/news"
-              search={{ ...search, page: result.page - 1 }}
-              className="rounded-md border border-border px-3 py-1.5 font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              Previous
-            </Link>
-          ) : (
-            <span />
-          )}
-          <span className="text-muted-foreground">
-            Page {result.page + 1} of {totalPages}
-          </span>
-          {result.page + 1 < totalPages ? (
-            <Link
-              to="/news"
-              search={{ ...search, page: result.page + 1 }}
-              className="rounded-md border border-border px-3 py-1.5 font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              Next
-            </Link>
-          ) : (
-            <span />
-          )}
-        </nav>
-      )}
     </div>
   );
 }
