@@ -141,8 +141,10 @@ function RootComponent() {
       >
         Skip to content
       </a>
-      <Navbar />
-      <NewsTicker />
+      <div className="sticky top-0 z-[1000]">
+        <Navbar />
+        <NewsTicker />
+      </div>
       <main id="main" className="min-h-[60vh]">
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
