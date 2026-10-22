@@ -104,18 +104,32 @@ export async function attachSources(
   items: AlertListItem[],
 ): Promise<void> {
   if (items.length === 0) return;
-  const { data } = await supabase
-    .from("alert_sources")
-    .select("alert_id,publisher,url")
-    .in("alert_id", items.map((i) => i.id))
-    .limit(500);
+  const ids = items.map((i) => i.id);
+  const [{ data }, social] = await Promise.all([
+    supabase.from("alert_sources").select("alert_id,publisher,url").in("alert_id", ids).limit(500),
+    // View not in generated types; read-only, only the account count is exposed.
+    (supabase as unknown as { from: (t: string) => any })
+      .from("alert_social_counts")
+      .select("alert_id,accounts")
+      .in("alert_id", ids)
+      .limit(500) as Promise<{ data: { alert_id: string; accounts: number | null }[] | null }>,
+  ]);
   const by = new Map<string, { publisher: string | null; url: string }[]>();
   for (const r of (data ?? []) as { alert_id: string; publisher: string | null; url: string }[]) {
     const l = by.get(r.alert_id) ?? [];
     l.push({ publisher: r.publisher, url: r.url });
     by.set(r.alert_id, l);
   }
-  for (const i of items) i.sources = by.get(i.id) ?? [];
+  const accounts = new Map<string, number>();
+  for (const r of social.data ?? []) {
+    const n = Number(r.accounts);
+    if (Number.isFinite(n) && n > 0) accounts.set(r.alert_id, n);
+  }
+  for (const i of items) {
+    i.sources = by.get(i.id) ?? [];
+    const n = accounts.get(i.id);
+    if (n) i.socialAccounts = n;
+  }
 }
 
 /** Regions + latest active alerts + feed status, for the home page map. */

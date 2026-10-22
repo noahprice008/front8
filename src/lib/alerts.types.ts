@@ -134,6 +134,8 @@ export interface AlertListItem {
   verification: AlertVerification;
   /** Independent outlets that reported this alert (list views). */
   sources?: { publisher: string | null; url: string }[];
+  /** Distinct social accounts discussing this alert (unverified signal). */
+  socialAccounts?: number;
 }
 
 export interface AlertDetail extends Omit<AlertListItem, "sources"> {
