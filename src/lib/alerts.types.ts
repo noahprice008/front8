@@ -175,6 +175,9 @@ export interface Headline {
   publishedAt: string | null;
   regionSlug: string | null;
   topic: string | null;
+  /** Activity classification label, null for general coverage. */
+  activityLabel?: string | null;
+  nearInstitution?: boolean;
 }
 
 export interface TickerItem {
@@ -184,4 +187,6 @@ export interface TickerItem {
   source: string | null;
   url: string;
   publishedAt: string | null;
+  /** Short tag such as PROTEST, VIOLENCE; defaults by kind. */
+  tag?: string;
 }

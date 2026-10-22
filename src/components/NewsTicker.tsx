@@ -10,7 +10,7 @@ function TickerEntry({ item, hidden }: { item: TickerItem; hidden?: boolean }) {
       <span
         className={`ticker-tag ${item.kind === "alert" ? "ticker-tag--alert" : "ticker-tag--report"}`}
       >
-        {item.kind === "alert" ? "ALERT" : "REPORT"}
+        {item.tag ?? (item.kind === "alert" ? "ALERT" : "REPORT")}
       </span>
       {item.source ? <span className="ticker-source">{item.source}</span> : null}
       <span className="ticker-time">{formatRelative(item.publishedAt)}</span>
