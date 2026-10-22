@@ -86,9 +86,7 @@ function HomePage() {
           antisemitic climate on the ground, country by country, tracking
           attacks, threats, harassment, demonstrations near Jewish institutions,
           and other forms of targeting against Jewish individuals and
-          communities. By turning verified information into clear, timely, and
-          actionable alerts, we help Jewish communities stay informed, assess
-          risks, and make better-informed decisions about their safety.
+          communities.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
