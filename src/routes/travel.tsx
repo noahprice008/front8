@@ -4,6 +4,7 @@ import { RouteError } from "@/components/RouteError";
 import { getTravelData } from "@/lib/alerts.functions";
 import type { AlertTier } from "@/lib/alerts.types";
 import { formatUtc } from "@/lib/format";
+import { getSecurityContact } from "@/lib/security-directory";
 
 const travelQuery = queryOptions({
   queryKey: ["travel"],
@@ -87,6 +88,29 @@ function TravelPage() {
                   Alerts for {region.name}
                 </Link>
               </div>
+
+              {(() => {
+                const sec = getSecurityContact(region.slug);
+                if (!sec) return null;
+                return (
+                  <div className="mt-3 border-l-2 border-destructive bg-destructive/5 px-3 py-2 text-sm">
+                    <p className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">
+                      // Emergency &amp; community security
+                    </p>
+                    <p className="mt-1 text-foreground">
+                      Emergency: <a href={`tel:${sec.emergency.split(" ")[0]}`} className="font-mono font-semibold text-destructive">{sec.emergency}</a>
+                    </p>
+                    {sec.orgs.map((o) => (
+                      <p key={o.name} className="text-foreground">
+                        {o.url ? (
+                          <a href={o.url} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:opacity-80">{o.name}</a>
+                        ) : o.name}
+                      </p>
+                    ))}
+                  </div>
+                );
+              })()}
+
 
               <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Active travel advisories
