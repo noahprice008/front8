@@ -22,7 +22,7 @@ import {
 } from "./alerts.types";
 import { ACTIVITY_LABELS, classifyHeadline, dedupeKey, isWindow, resolveRegionSlug, WINDOWS, type ActivityCategory } from "./climate";
 
-const FEED_DELAY_MS = 3 * 60 * 60 * 1000;
+const FEED_DELAY_MS = 2 * 60 * 60 * 1000;
 const PAGE_SIZE = 20;
 
 async function publicClient() {
@@ -95,6 +95,26 @@ function mapAlertRow(row: RawAlertRow): AlertListItem {
     regionSlug: row.regions?.slug ?? "",
     verification: row.verification === "developing" ? "developing" : "confirmed",
   };
+}
+
+/** Adds the outlets list (alert_sources) to each alert, in one bounded query. */
+export async function attachSources(
+  supabase: Awaited<ReturnType<typeof publicClient>>,
+  items: AlertListItem[],
+): Promise<void> {
+  if (items.length === 0) return;
+  const { data } = await supabase
+    .from("alert_sources")
+    .select("alert_id,publisher,url")
+    .in("alert_id", items.map((i) => i.id))
+    .limit(500);
+  const by = new Map<string, { publisher: string | null; url: string }[]>();
+  for (const r of (data ?? []) as { alert_id: string; publisher: string | null; url: string }[]) {
+    const l = by.get(r.alert_id) ?? [];
+    l.push({ publisher: r.publisher, url: r.url });
+    by.set(r.alert_id, l);
+  }
+  for (const i of items) i.sources = by.get(i.id) ?? [];
 }
 
 /** Regions + latest active alerts + feed status, for the home page map. */
@@ -259,13 +279,16 @@ export const listAlerts = createServerFn({ method: "GET" })
 
       const from = data.page * PAGE_SIZE;
       const { data: rows, error, count } = await query
+        .order("severity", { ascending: false })
         .order("published_at", { ascending: false, nullsFirst: false })
         .range(from, from + PAGE_SIZE - 1);
 
       if (error) throw new Error("Could not load alerts.");
 
+      const items = ((rows ?? []) as unknown as RawAlertRow[]).map(mapAlertRow);
+      await attachSources(supabase, items);
       return {
-        items: ((rows ?? []) as unknown as RawAlertRow[]).map(mapAlertRow),
+        items,
         total: count ?? 0,
         page: data.page,
         pageSize: PAGE_SIZE,
@@ -423,7 +446,11 @@ interface HeadlineRow {
   published_at: string | null;
   region_slug: string | null;
   topic: string | null;
+  language?: string | null;
+  title_original?: string | null;
 }
+
+const HEADLINE_COLS = "id,url,title,publisher,published_at,region_slug,topic,language,title_original";
 
 function mapHeadline(row: HeadlineRow): Headline {
   const c = classifyHeadline(row.title);
@@ -437,6 +464,8 @@ function mapHeadline(row: HeadlineRow): Headline {
     publishedAt: row.published_at,
     regionSlug: resolveRegionSlug(row.region_slug, row.title) ?? row.region_slug,
     topic: row.topic,
+    language: row.language ?? "en",
+    titleOriginal: row.language && row.language !== "en" ? (row.title_original ?? null) : null,
   };
 }
 
@@ -449,7 +478,7 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
     const [headlinesRes, alertsRes] = await Promise.all([
       supabase
         .from("headlines")
-        .select("id,url,title,publisher,published_at,region_slug,topic")
+        .select(HEADLINE_COLS)
         .eq("kept", true)
         .gt("published_at", since)
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -551,7 +580,7 @@ export const listHeadlines = createServerFn({ method: "GET" })
         // Classification and place resolution happen here, so filter in memory.
         let q2 = supabase
           .from("headlines")
-          .select("id,url,title,publisher,published_at,region_slug,topic")
+          .select(HEADLINE_COLS)
           .eq("kept", true)
           .gt("published_at", since);
         if (data.topic) q2 = q2.eq("topic", data.topic);
@@ -584,7 +613,7 @@ export const listHeadlines = createServerFn({ method: "GET" })
 
       let query = supabase
         .from("headlines")
-        .select("id,url,title,publisher,published_at,region_slug,topic", {
+        .select(HEADLINE_COLS, {
           count: "exact",
         })
         .eq("kept", true)
