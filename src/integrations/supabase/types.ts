@@ -178,6 +178,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          incident_checked_at: string | null
           kept: boolean
           published_at: string | null
           publisher: string | null
@@ -193,6 +194,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          incident_checked_at?: string | null
           kept?: boolean
           published_at?: string | null
           publisher?: string | null
@@ -208,6 +210,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          incident_checked_at?: string | null
           kept?: boolean
           published_at?: string | null
           publisher?: string | null
@@ -281,6 +284,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      publisher_allowlist: {
+        Row: {
+          note: string | null
+          pattern: string
+        }
+        Insert: {
+          note?: string | null
+          pattern: string
+        }
+        Update: {
+          note?: string | null
+          pattern?: string
+        }
+        Relationships: []
       }
       regions: {
         Row: {
@@ -506,7 +524,13 @@ export type Database = {
       }
     }
     Functions: {
+      ensure_publisher_source: { Args: { p_name: string }; Returns: string }
       headlines_unseen: { Args: { p_articles: Json }; Returns: Json }
+      incident_work: { Args: { p_limit?: number }; Returns: Json }
+      ingest_headline: {
+        Args: { p_ai: Json; p_headline_id: string }
+        Returns: Json
+      }
       ingest_news_candidate: {
         Args: {
           p_ai: Json
@@ -547,6 +571,7 @@ export type Database = {
         Args: { p_payload: Json; p_url: string }
         Returns: Json
       }
+      require_service_role: { Args: never; Returns: undefined }
       store_headlines: { Args: { p_rows: Json }; Returns: Json }
     }
     Enums: {
