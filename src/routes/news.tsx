@@ -236,7 +236,7 @@ function NewsPage() {
                   </span>
                 )}
               </div>
-              <h2 className="mt-1.5 text-base font-semibold leading-snug text-foreground">
+              <h3 className="mt-1.5 text-base font-semibold leading-snug text-foreground">
                 <a
                   href={h.url}
                   target="_blank"
@@ -245,7 +245,7 @@ function NewsPage() {
                 >
                   {h.title}
                 </a>
-              </h2>
+              </h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {h.publisher ? `${h.publisher} · ` : ""}
                 {formatRelative(h.publishedAt)}
