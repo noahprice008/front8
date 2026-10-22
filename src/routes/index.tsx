@@ -48,16 +48,18 @@ function HomePage() {
         <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Know the climate. Understand the risk. Stay prepared.
         </h1>
-        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-          Magen Global is a safety service for Jews living outside Israel. We
-          track the current antisemitic climate on the ground, country by
-          country — including attacks, threats, harassment, demonstrations
-          targeting Jewish communities, and official safety warnings.
+        <p className="mt-6 font-display text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          Our Mission
         </p>
-        <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-          We bring together sourced, verifiable information to help Jewish
-          communities understand what is happening, assess risks, and make
-          informed decisions about their safety.
+        <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+          Magen Global is an independent safety intelligence service for Jews
+          living or travelling outside Israel. We monitor the evolving
+          antisemitic climate on the ground, country by country, tracking
+          attacks, threats, harassment, demonstrations near Jewish institutions,
+          and other forms of targeting against Jewish individuals and
+          communities. By turning verified information into clear, timely, and
+          actionable alerts, we help Jewish communities stay informed, assess
+          risks, and make better-informed decisions about their safety.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -89,21 +91,6 @@ function HomePage() {
             </dd>
           </div>
         </dl>
-      </section>
-
-      {/* Mission */}
-      <section className="mt-10 max-w-3xl rounded-xl border-l-4 border-primary bg-card p-6" aria-label="Our mission">
-        <h2 className="font-display text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-          Our mission
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-foreground">
-          Magen Global is an independent safety service for Jews living
-          outside Israel. We track the current antisemitic climate on the
-          ground, country by country: attacks, threats, harassment,
-          demonstrations near Jewish places, and official warnings. We do not
-          cover Israel, Israeli news, or events inside Israel and the
-          Palestinian territories.
-        </p>
       </section>
 
       {/* World map */}
