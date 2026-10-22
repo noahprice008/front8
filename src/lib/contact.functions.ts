@@ -18,7 +18,7 @@ export const submitContactMessage = createServerFn({ method: "POST" })
     if (data.website) return { ok: true as const };
     // Recipient lives only on the server — never sent to the browser.
     const recipient = "noah@elevex.digital";
-    const webhook = process.env["CONTACT_WEBHOOK_URL"];
+    const webhook = process.env["CONTACT_WEBHOOK_URL_LIVE"] || process.env["CONTACT_WEBHOOK_URL"];
     if (!webhook) {
       console.error("CONTACT_WEBHOOK_URL is not configured");
       return { ok: false as const, error: "Messaging is temporarily unavailable. Please try again later." };
