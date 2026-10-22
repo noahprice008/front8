@@ -3,12 +3,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, type FormEvent } from "react";
 import { contactSchema, submitContactMessage } from "@/lib/contact.functions";
 
-type Search = { context?: string };
+type Search = { context?: string | undefined };
 
 export const Route = createFileRoute("/contact")({
-  validateSearch: (s: Record<string, unknown>): Search => ({
-    context: typeof s.context === "string" ? s.context.slice(0, 200) : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): Search => {
+    const c = s["context"];
+    return typeof c === "string" ? { context: c.slice(0, 200) } : {};
+  },
   head: () => ({
     meta: [
       { title: "Contact — Magen Global" },
