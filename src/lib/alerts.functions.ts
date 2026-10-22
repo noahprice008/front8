@@ -21,6 +21,7 @@ import {
   type VerificationFilter,
 } from "./alerts.types";
 import { ACTIVITY_LABELS, classifyHeadline, dedupeKey, isWindow, resolveRegionSlug, WINDOWS, type ActivityCategory } from "./climate";
+import { storyKey } from "./format";
 
 const FEED_DELAY_MS = 2 * 60 * 60 * 1000;
 const PAGE_SIZE = 20;
@@ -469,40 +470,44 @@ function mapHeadline(row: HeadlineRow): Headline {
   };
 }
 
-/** Ticker feed: 30 newest kept headlines interleaved with the 5 newest confirmed active alerts. */
+/** Ticker feed: newest 60 kept headlines from the last 72 hours (one per story) plus a few confirmed alerts. */
 export const getTickerItems = createServerFn({ method: "GET" }).handler(
-  async (): Promise<TickerItem[]> => {
+  async (): Promise<{ items: TickerItem[]; zones: number; lastIngestOkAt: string | null }> => {
     const supabase = await publicClient();
-    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
 
-    const [headlinesRes, alertsRes] = await Promise.all([
+    const [headlinesRes, alertsRes, regionsRes, settingsRes] = await Promise.all([
       supabase
         .from("headlines")
         .select(HEADLINE_COLS)
         .eq("kept", true)
         .gt("published_at", since)
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(60),
+        .limit(120),
       supabase
         .from("alerts")
-        .select("id,title,issuing_authority,published_at,verification")
+        .select("id,title,issuing_authority,published_at,verification,regions(name)")
         .eq("status", "published")
         .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
         .limit(10),
+      supabase.from("regions").select("slug,name,covered").limit(1000),
+      supabase.from("system_settings").select("last_ingest_ok_at").limit(1),
     ]);
 
-    if (headlinesRes.error) throw new Error("Could not load ticker.");
-    if (alertsRes.error) throw new Error("Could not load ticker.");
+    if (headlinesRes.error || alertsRes.error) throw new Error("Could not load ticker.");
 
+    const regionRows = (regionsRes.data ?? []) as { slug: string; name: string; covered: boolean }[];
+    const nameOf = new Map(regionRows.map((r) => [r.slug, r.name]));
     const items: TickerItem[] = [];
     const seenKeys = new Set<string>();
     for (const h of (headlinesRes.data ?? []) as unknown as HeadlineRow[]) {
-      const k = dedupeKey(h.title);
-      if (seenKeys.has(k) || items.length >= 35) continue;
+      const k = storyKey(h.title);
+      if (seenKeys.has(k) || items.length >= 60) continue; // rows are newest first, so the newest copy wins
       seenKeys.add(k);
       const c = classifyHeadline(h.title);
+      const slug = resolveRegionSlug(h.region_slug, h.title) ?? h.region_slug;
       items.push({
         tag: c ? c.category.toUpperCase() : "REPORT",
         kind: "headline",
@@ -511,6 +516,8 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
         source: h.publisher,
         url: h.url,
         publishedAt: h.published_at,
+        regionName: slug ? (nameOf.get(slug) ?? null) : null,
+        translated: Boolean(h.language && h.language !== "en"),
       });
     }
     for (const a of (alertsRes.data ?? []) as unknown as {
@@ -519,6 +526,7 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
       issuing_authority: string | null;
       published_at: string | null;
       verification: string | null;
+      regions: { name: string } | null;
     }[]) {
       items.push({
         tag: a.verification === "developing" ? "DEVELOPING" : "ALERT",
@@ -528,15 +536,20 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
         source: a.issuing_authority,
         url: `/alerts/${a.id}`,
         publishedAt: a.published_at,
+        regionName: a.regions?.name ?? null,
       });
     }
-    // Interleave by recency: newest first, alerts and reports mixed.
     items.sort((x, y) => {
       const tx = x.publishedAt ? new Date(x.publishedAt).getTime() : 0;
       const ty = y.publishedAt ? new Date(y.publishedAt).getTime() : 0;
       return ty - tx;
     });
-    return items;
+    const settings = ((settingsRes.data ?? []) as { last_ingest_ok_at: string | null }[])[0];
+    return {
+      items,
+      zones: regionRows.filter((r) => r.covered).length,
+      lastIngestOkAt: settings?.last_ingest_ok_at ?? null,
+    };
   },
 );
 
@@ -545,6 +558,7 @@ export interface HeadlinesFilters {
   topic?: string | undefined;
   activity?: string | undefined;
   window?: string | undefined;
+  lang?: "en" | "translated" | undefined;
   page: number;
 }
 
@@ -562,6 +576,7 @@ export const listHeadlines = createServerFn({ method: "GET" })
           ? q.activity
           : undefined,
       window: isWindow(q.window) ? q.window : undefined,
+      lang: q.lang === "en" || q.lang === "translated" ? q.lang : undefined,
       page:
         Number.isFinite(Number(q.page)) && Number(q.page) > 0
           ? Math.floor(Number(q.page))
@@ -584,6 +599,8 @@ export const listHeadlines = createServerFn({ method: "GET" })
           .eq("kept", true)
           .gt("published_at", since);
         if (data.topic) q2 = q2.eq("topic", data.topic);
+        if (data.lang === "en") q2 = q2.eq("language", "en");
+        if (data.lang === "translated") q2 = q2.neq("language", "en");
         const { data: rows, error } = await q2
           .order("published_at", { ascending: false, nullsFirst: false })
           .limit(1000);
@@ -621,6 +638,8 @@ export const listHeadlines = createServerFn({ method: "GET" })
 
       if (data.region) query = query.eq("region_slug", data.region);
       if (data.topic) query = query.eq("topic", data.topic);
+      if (data.lang === "en") query = query.eq("language", "en");
+      if (data.lang === "translated") query = query.neq("language", "en");
 
       const from = data.page * PAGE_SIZE;
       const { data: rows, error, count } = await query
