@@ -7,6 +7,7 @@ const DOTS: { key: string; label: string; className: string }[] = [
   { key: "elevated", label: "Info / Low (active alerts)", className: "bg-sev-info map-bubble map-bubble--elevated" },
   { key: "clear", label: "No current alerts", className: "bg-sev-clear map-bubble map-bubble--clear" },
   { key: "unmonitored", label: "Not yet monitored", className: "map-bubble map-bubble--unmonitored" },
+  { key: "posture-high", label: "Glowing ring: zone climate posture from recent activity", className: "map-legend-posture" },
   { key: "developing", label: "Developing report: single source, not yet confirmed", className: "map-legend-dev" },
 ];
 
@@ -53,8 +54,9 @@ export function MapLegend() {
           ))}
         </ul>
         <p className="mt-2 border-t border-border pt-2 text-[0.6875rem] leading-relaxed text-muted-foreground">
-          Green means no current alerts from monitored sources. It does not
-          guarantee safety.
+          Bubble numbers are incident alerts, or activity reports when no
+          alert is active. Activity is reported, not a confirmed direct
+          threat. Green does not guarantee safety.
         </p>
       </div>
     </div>

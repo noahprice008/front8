@@ -2,15 +2,18 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { MapLegend } from "../MapLegend";
 import type { MapRegion } from "@/lib/alerts.types";
+import type { ZoneClimate } from "@/lib/climate.functions";
 
 const WorldMapClient = lazy(() => import("./WorldMapLeaflet"));
 
 export function WorldMap({
   regions,
   feedDelay,
+  climate,
 }: {
   regions: MapRegion[];
   feedDelay: boolean;
+  climate?: ZoneClimate[];
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -27,7 +30,7 @@ export function WorldMap({
               />
             }
           >
-            <WorldMapClient regions={regions} feedDelay={feedDelay} />
+            <WorldMapClient regions={regions} feedDelay={feedDelay} climate={climate ?? []} />
           </Suspense>
         ) : (
           <div aria-hidden="true" className="h-[420px] w-full bg-muted sm:h-[520px] lg:h-[680px]" />

@@ -4,6 +4,7 @@ import { RouteError } from "@/components/RouteError";
 import { getMapData, listHeadlines } from "@/lib/alerts.functions";
 import { HEADLINE_TOPIC_LABELS, HEADLINE_TOPICS } from "@/lib/alerts.types";
 import { formatRelative } from "@/lib/format";
+import { ACTIVITY_CATEGORIES, ACTIVITY_LABELS } from "@/lib/climate";
 
 const mapQuery = queryOptions({
   queryKey: ["map-data"],
@@ -14,12 +15,16 @@ const mapQuery = queryOptions({
 interface NewsSearch {
   region?: string | undefined;
   topic?: string | undefined;
+  activity?: string | undefined;
+  window?: string | undefined;
   page?: number | undefined;
 }
 
 function headlinesQuery(deps: {
   region?: string | undefined;
   topic?: string | undefined;
+  activity?: string | undefined;
+  window?: string | undefined;
   page: number;
 }) {
   return queryOptions({
@@ -32,6 +37,8 @@ function headlinesQuery(deps: {
 const validateSearch = (search: Record<string, unknown>): NewsSearch => ({
   region: typeof search["region"] === "string" ? search["region"] : undefined,
   topic: typeof search["topic"] === "string" ? search["topic"] : undefined,
+  activity: typeof search["activity"] === "string" ? search["activity"] : undefined,
+  window: typeof search["window"] === "string" ? search["window"] : undefined,
   page:
     typeof search["page"] === "number" && search["page"] > 0
       ? Math.floor(search["page"])
@@ -41,9 +48,11 @@ const validateSearch = (search: Record<string, unknown>): NewsSearch => ({
 export const Route = createFileRoute("/news")({
   head,
   validateSearch,
-  loaderDeps: ({ search: { region, topic, page } }) => ({
+  loaderDeps: ({ search: { region, topic, activity, window, page } }) => ({
     region,
     topic,
+    activity,
+    window,
     page: page ?? 0,
   }),
   loader: ({ deps, context }) => {
@@ -65,6 +74,8 @@ function NewsPage() {
     headlinesQuery({
       region: search.region,
       topic: search.topic,
+      activity: search.activity,
+      window: search.window,
       page: search.page ?? 0,
     }),
   );
@@ -81,7 +92,7 @@ function NewsPage() {
     regions.find((r) => r.slug === slug)?.name ?? slug ?? "";
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
 
-  const update = (key: "region" | "topic", value: string) => {
+  const update = (key: "region" | "topic" | "activity" | "window", value: string) => {
     navigate({
       to: "/news",
       search: (prev) => {
@@ -142,7 +153,29 @@ function NewsPage() {
             ))}
           </select>
         </div>
-        {(search.region || search.topic) && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="news-activity" className="text-xs font-medium text-muted-foreground">
+            Type
+          </label>
+          <select id="news-activity" className={SELECT_CLASS} value={search.activity ?? ""} onChange={(e) => update("activity", e.target.value)}>
+            <option value="">All coverage</option>
+            <option value="any">On-the-ground activity only</option>
+            {ACTIVITY_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{ACTIVITY_LABELS[c]}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="news-window" className="text-xs font-medium text-muted-foreground">
+            Time range
+          </label>
+          <select id="news-window" className={SELECT_CLASS} value={search.window ?? ""} onChange={(e) => update("window", e.target.value)}>
+            <option value="">Last 14 days</option>
+            <option value="7d">Last 7 days</option>
+            <option value="24h">Last 24 hours</option>
+          </select>
+        </div>
+        {(search.region || search.topic || search.activity || search.window) && (
           <button
             type="button"
             onClick={() => navigate({ to: "/news", search: {} })}
@@ -174,6 +207,14 @@ function NewsPage() {
                   <span className="rounded-sm bg-secondary px-1.5 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-secondary-foreground">
                     {HEADLINE_TOPIC_LABELS[h.topic] ?? h.topic}
                   </span>
+                )}
+                {h.activityLabel && (
+                  <span className="border border-brand-accent px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-wider text-brand-accent">
+                    {h.activityLabel}
+                  </span>
+                )}
+                {h.nearInstitution && (
+                  <span className="font-mono text-[0.625rem] uppercase tracking-wider text-sev-high">Jewish institution</span>
                 )}
                 {h.regionSlug && (
                   <span className="text-xs text-muted-foreground">

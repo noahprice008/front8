@@ -6,35 +6,9 @@ import { RouteError } from "@/components/RouteError";
 import { WorldMap } from "@/components/map/WorldMap";
 import { getLatestAlerts, getMapData } from "@/lib/alerts.functions";
 import { formatRelative, formatUtc } from "@/lib/format";
-import { computeThreatcon, type ThreatconLevel } from "@/lib/threatcon";
-import type { MapRegion } from "@/lib/alerts.types";
-
-const LEVEL_CLS: Record<ThreatconLevel, string> = {
-  CRITICAL: "text-sev-critical border-sev-critical",
-  HIGH: "text-sev-high border-sev-high",
-  ELEVATED: "text-sev-moderate border-sev-moderate",
-  MONITORED: "text-sev-clear border-sev-clear",
-};
-
-function ThreatconMeter({ regions }: { regions: MapRegion[] }) {
-  const { level, counts } = computeThreatcon(regions);
-  const levels: ThreatconLevel[] = ["CRITICAL", "HIGH", "ELEVATED", "MONITORED"];
-  return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border border-border bg-card px-4 py-3" role="status" aria-label={`Global posture ${level}`}>
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Threatcon</span>
-        <span className={`border px-2 py-0.5 font-display text-xs font-bold uppercase tracking-[0.2em] ${LEVEL_CLS[level]}`}>{level}</span>
-      </div>
-      <ul className="flex flex-wrap gap-4 font-mono text-[0.6875rem] uppercase tracking-wider">
-        {levels.map((l) => (
-          <li key={l} className="text-muted-foreground">
-            <span className={LEVEL_CLS[l].split(" ")[0]}>{counts[l]}</span> {l} zones
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+import { getClimate } from "@/lib/climate.functions";
+import { isWindow, type ClimateWindow } from "@/lib/climate";
+import { ClimateBriefing, ThreatconBar, WindowSelector } from "@/components/ClimateBriefing";
 
 const mapQuery = queryOptions({
   queryKey: ["map-data"],
@@ -49,9 +23,22 @@ const latestQuery = queryOptions({
   staleTime: 30_000,
 });
 
+const climateQuery = (w: ClimateWindow) =>
+  queryOptions({
+    queryKey: ["climate", w],
+    queryFn: () => getClimate({ data: { window: w } }),
+    staleTime: 30_000,
+    refetchInterval: 120_000,
+  });
+
 export const Route = createFileRoute("/")({
   head,
-  loader: ({ context }) => {
+  validateSearch: (s: Record<string, unknown>): { window?: ClimateWindow | undefined } => ({
+    window: isWindow(s["window"]) ? s["window"] : undefined,
+  }),
+  loaderDeps: ({ search }) => ({ w: search.window ?? "7d" }),
+  loader: ({ context, deps }) => {
+    void context.queryClient.ensureQueryData(climateQuery(deps.w));
     void context.queryClient.ensureQueryData(mapQuery);
     void context.queryClient.ensureQueryData(latestQuery);
   },
@@ -62,6 +49,10 @@ export const Route = createFileRoute("/")({
 function HomePage() {
   const { data } = useSuspenseQuery(mapQuery);
   const { data: latest } = useSuspenseQuery(latestQuery);
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const win = search.window ?? "7d";
+  const { data: climate } = useSuspenseQuery(climateQuery(win));
 
   const topLevel = data.regions.filter((r) => !r.parentId);
   const monitored = topLevel.filter((r) => r.covered).length;
@@ -118,7 +109,7 @@ function HomePage() {
             </dd>
           </div>
         </dl>
-        <ThreatconMeter regions={data.regions} />
+        <ThreatconBar data={climate} />
       </section>
 
       {/* World map */}
@@ -129,24 +120,30 @@ function HomePage() {
               Current climate
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              One zone per monitored region. Click any zone for its latest
-              alerts.
+              One zone per monitored region. The outer ring shows each zone's
+              climate posture from verified incidents, developing reports and
+              recent activity. Click any zone for details.
             </p>
           </div>
+          <div className="flex items-center gap-3">
+          <WindowSelector value={win} onChange={(w) => navigate({ search: { window: w }, resetScroll: false })} />
           <p className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground" aria-live="off">
             {data.feed.lastIngestOkAt
               ? `Updated ${formatRelative(data.feed.lastIngestOkAt)}`
               : "Feed not yet updated"}
           </p>
+          </div>
         </div>
         <div className="mt-4 space-y-3">
           <FeedStatusBanner
             feedDelay={data.feed.feedDelay}
             autopublishPaused={!data.feed.autopublishEnabled}
           />
-          <WorldMap regions={data.regions} feedDelay={data.feed.feedDelay} />
+          <WorldMap regions={data.regions} feedDelay={data.feed.feedDelay} climate={climate.zones} />
         </div>
       </section>
+
+      <ClimateBriefing data={climate} />
 
       {/* Latest alerts */}
       <section className="mt-12" aria-label="Latest alerts">

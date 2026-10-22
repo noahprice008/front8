@@ -20,6 +20,7 @@ import {
   type TravelAdvisory,
   type VerificationFilter,
 } from "./alerts.types";
+import { ACTIVITY_LABELS, classifyHeadline, dedupeKey, isWindow, resolveRegionSlug, WINDOWS, type ActivityCategory } from "./climate";
 
 const FEED_DELAY_MS = 3 * 60 * 60 * 1000;
 const PAGE_SIZE = 20;
@@ -425,13 +426,16 @@ interface HeadlineRow {
 }
 
 function mapHeadline(row: HeadlineRow): Headline {
+  const c = classifyHeadline(row.title);
   return {
+    activityLabel: c ? ACTIVITY_LABELS[c.category] : null,
+    nearInstitution: c?.nearInstitution ?? false,
     id: row.id,
     url: row.url,
     title: row.title,
     publisher: row.publisher,
     publishedAt: row.published_at,
-    regionSlug: row.region_slug,
+    regionSlug: resolveRegionSlug(row.region_slug, row.title) ?? row.region_slug,
     topic: row.topic,
   };
 }
@@ -449,24 +453,29 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
         .eq("kept", true)
         .gt("published_at", since)
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(30),
+        .limit(60),
       supabase
         .from("alerts")
-        .select("id,title,issuing_authority,published_at")
+        .select("id,title,issuing_authority,published_at,verification")
         .eq("status", "published")
-        .eq("verification", "confirmed")
         .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(5),
+        .limit(10),
     ]);
 
     if (headlinesRes.error) throw new Error("Could not load ticker.");
     if (alertsRes.error) throw new Error("Could not load ticker.");
 
     const items: TickerItem[] = [];
+    const seenKeys = new Set<string>();
     for (const h of (headlinesRes.data ?? []) as unknown as HeadlineRow[]) {
+      const k = dedupeKey(h.title);
+      if (seenKeys.has(k) || items.length >= 35) continue;
+      seenKeys.add(k);
+      const c = classifyHeadline(h.title);
       items.push({
+        tag: c ? c.category.toUpperCase() : "REPORT",
         kind: "headline",
         id: h.id,
         title: h.title,
@@ -480,8 +489,10 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
       title: string;
       issuing_authority: string | null;
       published_at: string | null;
+      verification: string | null;
     }[]) {
       items.push({
+        tag: a.verification === "developing" ? "DEVELOPING" : "ALERT",
         kind: "alert",
         id: a.id,
         title: a.title,
@@ -503,6 +514,8 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
 export interface HeadlinesFilters {
   region?: string | undefined;
   topic?: string | undefined;
+  activity?: string | undefined;
+  window?: string | undefined;
   page: number;
 }
 
@@ -515,6 +528,11 @@ export const listHeadlines = createServerFn({ method: "GET" })
       topic: HEADLINE_TOPICS.includes(q.topic as string)
         ? (q.topic as string)
         : undefined,
+      activity:
+        q.activity === "any" || (typeof q.activity === "string" && q.activity in ACTIVITY_LABELS)
+          ? q.activity
+          : undefined,
+      window: isWindow(q.window) ? q.window : undefined,
       page:
         Number.isFinite(Number(q.page)) && Number(q.page) > 0
           ? Math.floor(Number(q.page))
@@ -526,7 +544,43 @@ export const listHeadlines = createServerFn({ method: "GET" })
       data,
     }): Promise<{ items: Headline[]; total: number; page: number; pageSize: number }> => {
       const supabase = await publicClient();
-      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const days = data.window && isWindow(data.window) ? WINDOWS[data.window] : 14;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+      if (data.activity || data.region) {
+        // Classification and place resolution happen here, so filter in memory.
+        let q2 = supabase
+          .from("headlines")
+          .select("id,url,title,publisher,published_at,region_slug,topic")
+          .eq("kept", true)
+          .gt("published_at", since);
+        if (data.topic) q2 = q2.eq("topic", data.topic);
+        const { data: rows, error } = await q2
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .limit(1000);
+        if (error) throw new Error("Could not load headlines.");
+        const seen = new Set<string>();
+        const all = ((rows ?? []) as unknown as HeadlineRow[]).filter((r) => {
+          const k = dedupeKey(r.title);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          const c = classifyHeadline(r.title);
+          if (data.activity === "any" && !c) return false;
+          if (data.activity && data.activity !== "any" && c?.category !== (data.activity as ActivityCategory)) return false;
+          if (data.region) {
+            const slug = resolveRegionSlug(r.region_slug, r.title);
+            if (slug !== data.region && r.region_slug !== data.region) return false;
+          }
+          return true;
+        });
+        const from = data.page * PAGE_SIZE;
+        return {
+          items: all.slice(from, from + PAGE_SIZE).map(mapHeadline),
+          total: all.length,
+          page: data.page,
+          pageSize: PAGE_SIZE,
+        };
+      }
 
       let query = supabase
         .from("headlines")
