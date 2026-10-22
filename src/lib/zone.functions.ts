@@ -71,7 +71,7 @@ export const getZoneDetail = createServerFn({ method: "GET" })
       regionSlug: a.regions?.slug ?? r.slug, verification: a.verification === "developing" ? "developing" : "confirmed",
     }));
     await attachSources(supabase, all);
-    const advisories = all.filter((a) => a.tier === "official" && a.category === "travel_advisory");
+    const advisories = all.filter((a) => a.tier === "official");
     const alerts = all.filter((a) => !advisories.includes(a));
     let top: Severity | null = null;
     for (const a of alerts) if (!top || SEVERITY_ORDER.indexOf(a.severity) > SEVERITY_ORDER.indexOf(top)) top = a.severity;
