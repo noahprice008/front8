@@ -85,9 +85,14 @@ export function Navbar() {
           })}
           <Link
             to="/contact"
-            className="ml-1 inline-flex h-7 items-center rounded-sm border border-brand-accent px-2.5 font-display text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
+            aria-label="Contact us"
+            title="Contact us"
+            className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md border border-brand-accent text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
           >
-            Contact
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="1.5" />
+              <path d="m3 7.5 9 6 9-6" />
+            </svg>
           </Link>
           <ThemeToggle />
         </nav>
@@ -95,9 +100,14 @@ export function Navbar() {
         <div className="flex items-center gap-2 sm:hidden">
           <Link
             to="/contact"
-            className="inline-flex h-7 items-center rounded-sm border border-brand-accent px-2 font-display text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-brand-accent"
+            aria-label="Contact us"
+            title="Contact us"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-brand-accent text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
           >
-            Contact
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="1.5" />
+              <path d="m3 7.5 9 6 9-6" />
+            </svg>
           </Link>
           <ThemeToggle />
           <button
