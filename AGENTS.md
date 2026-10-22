@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Define leaf-page metadata in each route's `head` option so TanStack Router applies page-specific titles and descriptions.
+- Security climate (postures, activity classification) is derived in code from approved headlines and alerts (src/lib/climate.ts); the database schema stays unchanged, so the rubric lives in one tested module.
