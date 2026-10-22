@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
 import { markerStyleFor, type MapRegion, type MarkerStyle } from "@/lib/alerts.types";
+import type { ZoneClimate } from "@/lib/climate.functions";
+import { ACTIVITY_LABELS, type ActivityCategory } from "@/lib/climate";
 
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
 type Basemap = "tactical" | "light" | "satellite" | "terrain";
@@ -34,7 +36,7 @@ function radiusFor(style: MarkerStyle, n: number): number {
   }
 }
 
-function popupHtml(region: MapRegion): string {
+function popupHtml(region: MapRegion, zone?: ZoneClimate): string {
   const name = escapeHtml(region.name);
   const coords =
     region.lat != null && region.lng != null
@@ -42,6 +44,13 @@ function popupHtml(region: MapRegion): string {
       : "";
   if (!region.covered) return `<strong>${name}</strong>${coords}<p class="leaflet-bubble-note">Not yet monitored.</p>`;
   const parts: string[] = [];
+  if (zone) {
+    parts.push(`<p class="leaflet-bubble-posture leaflet-bubble-posture--${zone.posture.toLowerCase()}">POSTURE: ${zone.posture} · ${zone.trend.toUpperCase()}</p>`);
+    if (zone.activityCount > 0) {
+      const cats = (Object.entries(zone.byCategory) as [ActivityCategory, number][]).map(([c, n]) => `${escapeHtml(ACTIVITY_LABELS[c])} ${n}`).join(" · ");
+      parts.push(`<p class="leaflet-bubble-note">${zone.activityCount} activity report${zone.activityCount === 1 ? "" : "s"}: ${cats}</p>`);
+    }
+  }
   if (region.activeAlerts > 0) {
     parts.push(`<p class="leaflet-bubble-note">${region.activeAlerts} active alert${region.activeAlerts === 1 ? "" : "s"} · top severity: ${escapeHtml(region.topSeverity ?? "info")}</p>`);
     if (region.latestAlerts.length > 0) {
@@ -50,7 +59,7 @@ function popupHtml(region: MapRegion): string {
       parts.push("</ul>");
     }
   } else {
-    parts.push('<p class="leaflet-bubble-note">No current alerts. This does not guarantee safety.</p>');
+    parts.push('<p class="leaflet-bubble-note">No current incident alerts. This does not guarantee safety.</p>');
   }
   if (region.developingAlerts > 0) {
     parts.push(`<p class="leaflet-bubble-note">${region.developingAlerts} developing report${region.developingAlerts === 1 ? "" : "s"}, unconfirmed</p>`);
@@ -60,11 +69,12 @@ function popupHtml(region: MapRegion): string {
       parts.push("</ul>");
     }
   }
+  if (zone) parts.push(`<p class="leaflet-bubble-note"><a href="/regions/${encodeURIComponent(region.slug)}">Open zone briefing</a></p>`);
   parts.push(`<p class="leaflet-bubble-note"><a href="/alerts?region=${encodeURIComponent(region.slug)}">View all alerts for ${name}</a></p>`);
   return `<strong>${name}</strong>${coords}${parts.join("")}`;
 }
 
-export default function WorldMapClient({ regions, feedDelay }: { regions: MapRegion[]; feedDelay: boolean }) {
+export default function WorldMapClient({ regions, feedDelay, climate }: { regions: MapRegion[]; feedDelay: boolean; climate: ZoneClimate[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const tilesRef = useRef<TileLayer[]>([]);
@@ -73,6 +83,7 @@ export default function WorldMapClient({ regions, feedDelay }: { regions: MapReg
   const [cursor, setCursor] = useState<string>("--");
   const [zoom, setZoom] = useState(HOME_ZOOM);
   const [full, setFull] = useState(false);
+  const [showClimate, setShowClimate] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,20 +113,25 @@ export default function WorldMapClient({ regions, feedDelay }: { regions: MapReg
       map.on("mouseout", () => setCursor("--"));
 
       const DETAIL_ZOOM = 4;
+      const zoneById = new Map(climate.map((z) => [z.regionId, z]));
       const parentsWithChildren = new Set(regions.map((r) => r.parentId).filter((id): id is string => !!id));
       const overview: LayerGroup = L.layerGroup();
       const detail: LayerGroup = L.layerGroup();
       for (const region of regions) {
         if (region.lat == null || region.lng == null) continue;
         const group = region.parentId ? detail : parentsWithChildren.has(region.id) ? overview : null;
+        const zone = zoneById.get(region.id);
+        const zone0 = (_id: string) => zone;
         const realStyle = markerStyleFor(region);
         const style: string = feedDelay ? "stale" : realStyle;
-        const radius = radiusFor(realStyle, region.activeAlerts);
+        const radius = radiusFor(realStyle, region.activeAlerts) + (showClimate && zone0(region.id) ? Math.min(zone0(region.id)!.activityCount, 10) * 0.6 : 0);
         const size = radius * 2;
+        const posture = showClimate && zone && zone.posture !== "MONITORED" ? `<span class="map-posture map-posture--${zone.posture.toLowerCase()}" aria-hidden="true"></span>` : "";
+        const activityBadge = showClimate && zone && zone.activityCount > 0 && region.activeAlerts === 0 ? `<span class="map-bubble-count">${zone.activityCount}</span>` : "";
         const devRing = region.developingAlerts > 0 ? '<span class="map-bubble-dev" aria-hidden="true"></span>' : "";
         const icon = L.divIcon({
           className: "map-bubble-anchor",
-          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : ""}</div></div>`,
+          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${posture}${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : activityBadge}</div></div>`,
           iconSize: [size, size],
           iconAnchor: [radius, radius],
           popupAnchor: [0, -radius],
@@ -128,7 +144,7 @@ export default function WorldMapClient({ regions, feedDelay }: { regions: MapReg
           title: feedDelay ? `${region.name} (feed delayed)` : region.name,
         })
           .addTo(group ?? map)
-          .bindPopup(popupHtml(region), { maxWidth: 300 });
+          .bindPopup(popupHtml(region, zone), { maxWidth: 320 });
         marker.on("dblclick", () => map.flyTo([lat, lng], region.parentId ? 6 : 5, { duration: 0.8 }));
       }
       const syncZoom = () => {
@@ -153,7 +169,7 @@ export default function WorldMapClient({ regions, feedDelay }: { regions: MapReg
       tilesRef.current = [];
       setReady(false);
     };
-  }, [regions, feedDelay]);
+  }, [regions, feedDelay, climate, showClimate]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -207,6 +223,9 @@ export default function WorldMapClient({ regions, feedDelay }: { regions: MapReg
           ))}
         </div>
         <div className="tactical-panel flex gap-1 p-1">
+          <button type="button" aria-pressed={showClimate} onClick={() => setShowClimate((v) => !v)} className={`${btn} ${showClimate ? "bg-brand-accent text-brand-accent-foreground" : "text-foreground hover:bg-accent"}`}>
+            Climate layer
+          </button>
           <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(HOME, HOME_ZOOM, { duration: 0.8 })}>
             Reset view
           </button>
