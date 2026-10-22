@@ -67,7 +67,7 @@ export const getClimate = createServerFn({ method: "GET" })
   }))
   .handler(async ({ data }): Promise<ClimateData> => {
     const { getPublicClient } = await import("@/lib/supabase-public.server");
-    const supabase = getPublicClient();
+    const supabase = await getPublicClient();
     const days = WINDOWS[data.window];
     const now = Date.now();
     const since = now - days * 86_400_000;
