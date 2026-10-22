@@ -16,3 +16,12 @@
 - [x] News type + time filters; ticker category tags incl. developing
 - [x] Quality controls: dedupe, place resolution, thresholds, activity alone never CRITICAL
 - [ ] 30-day window — blocked: public headline access is limited to 14 days by the database
+
+# Front-end data update (brief)
+- [x] Ticker 72h / 60 items, story dedupe, zone + translated tag, fallback under 8 items (alerts kept in ticker)
+- [x] News: language filter, day groups, load more on scroll, translated + original headline (max range 14 days)
+- [x] Map wording: "No incidents reported in the last 7 days" (current map kept)
+- [x] Zone page: status, last updated, alerts with outlets/sources/expiry, official advisories, headlines, 7-day chart; /region/:slug alias
+- [x] Alerts sorted by severity then newest, outlet counts and sources
+- [x] Footer freshness stamp, "Data feeds are delayed" after 2h
+- [x] /how-it-works page
