@@ -399,6 +399,104 @@ export type Database = {
           },
         ]
       }
+      social_queries: {
+        Row: {
+          active: boolean
+          id: number
+          platform: string
+          query: string
+        }
+        Insert: {
+          active?: boolean
+          id?: never
+          platform?: string
+          query: string
+        }
+        Update: {
+          active?: boolean
+          id?: never
+          platform?: string
+          query?: string
+        }
+        Relationships: []
+      }
+      social_signals: {
+        Row: {
+          alert_id: string | null
+          author_did: string | null
+          category: string | null
+          classified_at: string | null
+          created_at: string
+          event_key: string | null
+          id: string
+          kind: string | null
+          lang: string | null
+          needs_human: boolean
+          platform: string
+          post_url: string | null
+          posted_at: string | null
+          region_slug: string | null
+          relevant: boolean | null
+          severity: string | null
+          status: string
+          summary: string | null
+          text: string | null
+          uri: string
+        }
+        Insert: {
+          alert_id?: string | null
+          author_did?: string | null
+          category?: string | null
+          classified_at?: string | null
+          created_at?: string
+          event_key?: string | null
+          id?: string
+          kind?: string | null
+          lang?: string | null
+          needs_human?: boolean
+          platform?: string
+          post_url?: string | null
+          posted_at?: string | null
+          region_slug?: string | null
+          relevant?: boolean | null
+          severity?: string | null
+          status?: string
+          summary?: string | null
+          text?: string | null
+          uri: string
+        }
+        Update: {
+          alert_id?: string | null
+          author_did?: string | null
+          category?: string | null
+          classified_at?: string | null
+          created_at?: string
+          event_key?: string | null
+          id?: string
+          kind?: string | null
+          lang?: string | null
+          needs_human?: boolean
+          platform?: string
+          post_url?: string | null
+          posted_at?: string | null
+          region_slug?: string | null
+          relevant?: boolean | null
+          severity?: string | null
+          status?: string
+          summary?: string | null
+          text?: string | null
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_signals_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sources: {
         Row: {
           active: boolean
@@ -500,6 +598,23 @@ export type Database = {
       }
     }
     Views: {
+      alert_social_counts: {
+        Row: {
+          accounts: number | null
+          alert_id: string | null
+          last_post_at: string | null
+          posts: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_signals_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_sources: {
         Row: {
           id: string | null
@@ -570,6 +685,21 @@ export type Database = {
           },
         ]
       }
+      social_review_queue: {
+        Row: {
+          accounts: number | null
+          event_key: string | null
+          first_seen: string | null
+          last_seen: string | null
+          needs_human: boolean | null
+          posts: number | null
+          region_slug: string | null
+          sample_links: string[] | null
+          summary: string | null
+          top_severity: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_zone: {
@@ -633,7 +763,12 @@ export type Database = {
         Returns: Json
       }
       news_query_plan: { Args: never; Returns: Json }
+      open_event_list: { Args: never; Returns: Json }
       require_service_role: { Args: never; Returns: undefined }
+      social_apply: { Args: { p_rows: Json }; Returns: Json }
+      social_plan: { Args: never; Returns: Json }
+      social_store: { Args: { p_rows: Json }; Returns: Json }
+      social_work: { Args: { p_limit?: number }; Returns: Json }
       store_headlines: { Args: { p_rows: Json }; Returns: Json }
       translation_work: { Args: { p_limit?: number }; Returns: Json }
     }
