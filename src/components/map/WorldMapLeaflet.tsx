@@ -62,7 +62,7 @@ function popupHtml(region: MapRegion, zone?: ZoneClimate): string {
       parts.push("</ul>");
     }
   } else {
-    parts.push('<p class="leaflet-bubble-note">No current incident alerts. This does not guarantee safety.</p>');
+    parts.push('<p class="leaflet-bubble-note">No incidents reported in the last 7 days. No reports does not guarantee safety.</p>');
   }
   if (region.developingAlerts > 0) {
     parts.push(`<p class="leaflet-bubble-note">${region.developingAlerts} developing report${region.developingAlerts === 1 ? "" : "s"}, unconfirmed</p>`);

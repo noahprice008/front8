@@ -160,9 +160,8 @@ function HomePage() {
         </div>
         {latest.length === 0 ? (
           <div className="mt-4 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-            No active alerts right now. Monitored regions are showing green on
-            the map — which means no current alerts from monitored sources. It
-            does not guarantee safety.
+            No active alerts right now. Green on the map means no incidents
+            reported in the last 7 days. No reports does not guarantee safety.
           </div>
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

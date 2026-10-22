@@ -13,10 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TravelRouteImport } from './routes/travel'
 import { Route as AlertsIdRouteImport } from './routes/alerts.$id'
+import { Route as RegionSlugRouteImport } from './routes/region.$slug'
 import { Route as RegionsSlugRouteImport } from './routes/regions.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -39,6 +41,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NewsRoute = NewsRouteImport.update({
   id: '/news',
   path: '/news',
@@ -59,6 +66,11 @@ const AlertsIdRoute = AlertsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AlertsRoute,
 } as any)
+const RegionSlugRoute = RegionSlugRouteImport.update({
+  id: '/region/$slug',
+  path: '/region/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegionsSlugRoute = RegionsSlugRouteImport.update({
   id: '/regions/$slug',
   path: '/regions/$slug',
@@ -70,10 +82,12 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/alerts': typeof AlertsRouteWithChildren
   '/contact': typeof ContactRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/news': typeof NewsRoute
   '/privacy': typeof PrivacyRoute
   '/travel': typeof TravelRoute
   '/alerts/$id': typeof AlertsIdRoute
+  '/region/$slug': typeof RegionSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
 }
 export interface FileRoutesByTo {
@@ -81,10 +95,12 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/alerts': typeof AlertsRouteWithChildren
   '/contact': typeof ContactRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/news': typeof NewsRoute
   '/privacy': typeof PrivacyRoute
   '/travel': typeof TravelRoute
   '/alerts/$id': typeof AlertsIdRoute
+  '/region/$slug': typeof RegionSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
 }
 export interface FileRoutesById {
@@ -93,10 +109,12 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/alerts': typeof AlertsRouteWithChildren
   '/contact': typeof ContactRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/news': typeof NewsRoute
   '/privacy': typeof PrivacyRoute
   '/travel': typeof TravelRoute
   '/alerts/$id': typeof AlertsIdRoute
+  '/region/$slug': typeof RegionSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
 }
 export interface FileRouteTypes {
@@ -106,10 +124,12 @@ export interface FileRouteTypes {
     | '/about'
     | '/alerts'
     | '/contact'
+    | '/how-it-works'
     | '/news'
     | '/privacy'
     | '/travel'
     | '/alerts/$id'
+    | '/region/$slug'
     | '/regions/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,10 +137,12 @@ export interface FileRouteTypes {
     | '/about'
     | '/alerts'
     | '/contact'
+    | '/how-it-works'
     | '/news'
     | '/privacy'
     | '/travel'
     | '/alerts/$id'
+    | '/region/$slug'
     | '/regions/$slug'
   id:
     | '__root__'
@@ -128,10 +150,12 @@ export interface FileRouteTypes {
     | '/about'
     | '/alerts'
     | '/contact'
+    | '/how-it-works'
     | '/news'
     | '/privacy'
     | '/travel'
     | '/alerts/$id'
+    | '/region/$slug'
     | '/regions/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -140,9 +164,11 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AlertsRoute: typeof AlertsRouteWithChildren
   ContactRoute: typeof ContactRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   NewsRoute: typeof NewsRoute
   PrivacyRoute: typeof PrivacyRoute
   TravelRoute: typeof TravelRoute
+  RegionSlugRoute: typeof RegionSlugRoute
   RegionsSlugRoute: typeof RegionsSlugRoute
 }
 
@@ -176,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/news': {
       id: '/news'
       path: '/news'
@@ -204,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlertsIdRouteImport
       parentRoute: typeof AlertsRoute
     }
+    '/region/$slug': {
+      id: '/region/$slug'
+      path: '/region/$slug'
+      fullPath: '/region/$slug'
+      preLoaderRoute: typeof RegionSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/regions/$slug': {
       id: '/regions/$slug'
       path: '/regions/$slug'
@@ -230,9 +270,11 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AlertsRoute: AlertsRouteWithChildren,
   ContactRoute: ContactRoute,
+  HowItWorksRoute: HowItWorksRoute,
   NewsRoute: NewsRoute,
   PrivacyRoute: PrivacyRoute,
   TravelRoute: TravelRoute,
+  RegionSlugRoute: RegionSlugRoute,
   RegionsSlugRoute: RegionsSlugRoute,
 }
 export const routeTree = rootRouteImport

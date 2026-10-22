@@ -6,6 +6,13 @@ import { getClimate } from "@/lib/climate.functions";
 import { getTravelData } from "@/lib/alerts.functions";
 import { ACTIVITY_LABELS, isWindow, type ActivityCategory, type ClimateWindow } from "@/lib/climate";
 import { getSecurityContact } from "@/lib/security-directory";
+import { getZoneDetail } from "@/lib/zone.functions";
+import { AlertCard } from "@/components/AlertCard";
+import { SeverityBadge } from "@/components/SeverityBadge";
+import { formatRelative, languageName } from "@/lib/format";
+
+const zoneQuery = (slug: string) =>
+  queryOptions({ queryKey: ["zone", slug], queryFn: () => getZoneDetail({ data: { slug } }), staleTime: 60_000 });
 
 const climateQuery = (w: ClimateWindow) =>
   queryOptions({ queryKey: ["climate", w], queryFn: () => getClimate({ data: { window: w } }), staleTime: 60_000 });
@@ -14,8 +21,9 @@ const travelQuery = queryOptions({ queryKey: ["travel"], queryFn: () => getTrave
 export const Route = createFileRoute("/regions/$slug")({
   validateSearch: (s: Record<string, unknown>): { window?: ClimateWindow | undefined } => ({ window: isWindow(s["window"]) ? s["window"] : undefined }),
   loaderDeps: ({ search }) => ({ w: search.window ?? "14d" }),
-  loader: async ({ context, deps }) => {
+  loader: async ({ context, deps, params }) => {
     void context.queryClient.ensureQueryData(travelQuery);
+    await context.queryClient.ensureQueryData(zoneQuery(params.slug));
     return context.queryClient.ensureQueryData(climateQuery(deps.w));
   },
   head: ({ params }) => {
@@ -39,6 +47,7 @@ function RegionPage() {
   const w = search.window ?? "14d";
   const { data } = useSuspenseQuery(climateQuery(w));
   const { data: travel } = useSuspenseQuery(travelQuery);
+  const { data: detail } = useSuspenseQuery(zoneQuery(slug));
   const zone = data.zones.find((z) => z.slug === slug);
   if (!zone) throw notFound();
   const items = data.stream.filter((i) => i.regionSlug === slug);
@@ -57,7 +66,27 @@ function RegionPage() {
         <PostureBadge p={zone.posture} />
         <TrendLabel t={zone.trend} />
         <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Score {zone.score}</span>
+        <span className="flex items-center gap-2">
+          {detail?.topSeverity ? <SeverityBadge severity={detail.topSeverity} size="sm" /> : <span className="text-xs font-medium text-muted-foreground">No recent reports</span>}
+        </span>
+        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Last updated {formatRelative(detail?.lastIngestOkAt)}</span>
       </div>
+
+      <section className="mt-6">
+        <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Active alerts</h2>
+        {!detail || detail.alerts.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No active alerts for {zone.name}. No reports does not guarantee safety.</p>
+        ) : (
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">{detail.alerts.map((a) => <AlertCard key={a.id} alert={a} />)}</div>
+        )}
+      </section>
+
+      {detail && (
+        <section className="mt-6 border border-border bg-card p-5">
+          <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Last 7 days</h2>
+          <ActivityChart days={detail.days} />
+        </section>
+      )}
 
       <section className="mt-6 border border-border bg-card p-5">
         <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Why this posture?</h2>
@@ -85,14 +114,38 @@ function RegionPage() {
         <Link to="/alerts" search={{ region: slug }} className="mt-3 inline-block text-sm font-medium text-primary underline">All alerts for {zone.name}</Link>
       </section>
 
-      {advisories.length > 0 && (
+      {detail && detail.advisories.length > 0 ? (
+        <section className="mt-6">
+          <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Official travel advisories</h2>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">{detail.advisories.map((a) => <AlertCard key={a.id} alert={a} />)}</div>
+        </section>
+      ) : advisories.length > 0 ? (
         <section className="mt-6 border border-border bg-card p-5">
-          <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Travel advisory</h2>
+          <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Official travel advisories</h2>
           {advisories.map((a) => (
             <p key={a.id} className="mt-2 text-sm"><a href={a.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-medium underline">{a.title}</a> — {a.levelText}</p>
           ))}
         </section>
-      )}
+      ) : null}
+
+      <section className="mt-6">
+        <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Recent headlines</h2>
+        {!detail || detail.headlines.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No recent headlines for this zone yet.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-border border border-border bg-card">
+            {detail.headlines.map((h) => (
+              <li key={h.id} className="px-4 py-2.5">
+                <a href={h.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-foreground hover:underline">{h.title}</a>
+                <p className="text-xs text-muted-foreground">
+                  {h.publisher ? `${h.publisher} · ` : ""}{formatRelative(h.publishedAt)}
+                  {h.language && h.language !== "en" ? ` · Translated from ${languageName(h.language)}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {contact && (
         <section className="mt-6 border-l-2 border-sev-critical bg-card p-5">
@@ -100,6 +153,36 @@ function RegionPage() {
           <p className="mt-2 text-sm">Emergency: <a className="font-semibold underline" href={`tel:${contact.emergency}`}>{contact.emergency}</a></p>
         </section>
       )}
+    </div>
+  );
+}
+
+function ActivityChart({ days }: { days: { date: string; headlines: number; alerts: number }[] }) {
+  const max = Math.max(1, ...days.map((d) => d.headlines + d.alerts));
+  return (
+    <div className="mt-3">
+      <div className="flex h-32 items-end gap-2" role="img" aria-label="Headlines and alerts per day over the last 7 days">
+        {days.map((d) => (
+          <div key={d.date} className="flex flex-1 flex-col items-center gap-1">
+            <span className="font-mono text-[0.625rem] text-muted-foreground">{d.headlines + d.alerts}</span>
+            <div className="flex w-full flex-col justify-end" style={{ height: "96px" }}>
+              <div className="w-full bg-sev-high" style={{ height: `${(d.alerts / max) * 96}px` }} title={`${d.alerts} alerts`} />
+              <div className="w-full bg-primary/70" style={{ height: `${(d.headlines / max) * 96}px` }} title={`${d.headlines} headlines`} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex gap-2">
+        {days.map((d) => (
+          <span key={d.date} className="flex-1 text-center font-mono text-[0.625rem] uppercase text-muted-foreground">
+            {new Date(d.date + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", timeZone: "GMT" })}
+          </span>
+        ))}
+      </div>
+      <p className="mt-2 flex gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 bg-primary/70" />Headlines</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 bg-sev-high" />Alerts</span>
+      </p>
     </div>
   );
 }
