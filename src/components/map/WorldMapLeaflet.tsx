@@ -17,6 +17,9 @@ const BASEMAPS: Record<Basemap, { label: string; url: string; labels?: string }>
 
 const HOME: [number, number] = [31, 12];
 const HOME_ZOOM = 2;
+/** Phones show ~140° of longitude at zoom 2, so centre on the Atlantic to keep North America and Europe in view. */
+const MOBILE_HOME: [number, number] = [42, -32];
+const homeView = (): [number, number] => (typeof window !== "undefined" && window.innerWidth < 640 ? MOBILE_HOME : HOME);
 
 const HTML_ESCAPES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 const escapeHtml = (v: string) => v.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c] ?? c);
@@ -101,7 +104,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         maxZoom: 18,
         zoomSnap: 0.5,
         attributionControl: false,
-      }).setView(HOME, HOME_ZOOM);
+      }).setView(homeView(), HOME_ZOOM);
       // Only zoom with the wheel once the user clicks the map, so the page still scrolls.
       map.scrollWheelZoom.disable();
       map.on("click", () => map.scrollWheelZoom.enable());
@@ -240,7 +243,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
           <button type="button" aria-pressed={showClimate} onClick={() => setShowClimate((v) => !v)} className={`${btn} ${showClimate ? "bg-brand-accent text-brand-accent-foreground" : "text-foreground hover:bg-accent"}`}>
             Climate layer
           </button>
-          <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(HOME, HOME_ZOOM, { duration: 0.8 })}>
+          <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(homeView(), HOME_ZOOM, { duration: 0.8 })}>
             Reset view
           </button>
           <button type="button" className={`${btn} text-foreground hover:bg-accent`} aria-pressed={full} onClick={() => setFull((f) => !f)}>
