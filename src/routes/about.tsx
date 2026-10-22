@@ -1,4 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SeverityBadge } from "@/components/SeverityBadge";
+import type { Severity } from "@/lib/alerts.types";
+
+const SEVERITY_GUIDE: { severity: Severity; marker: string; description: string }[] = [
+  { severity: "critical", marker: "map-bubble--critical", description: "An imminent or life-threatening danger. Act immediately and follow official instructions." },
+  { severity: "high", marker: "map-bubble--high", description: "A serious, credible threat. Take protective action and monitor official channels." },
+  { severity: "moderate", marker: "map-bubble--moderate", description: "A credible but contained threat. Stay alert and review your safety plans." },
+  { severity: "low", marker: "bg-sev-low", description: "A minor or geographically limited event that warrants awareness." },
+  { severity: "info", marker: "map-bubble--elevated", description: "Relevant context or background information with no immediate action indicated." },
+];
 
 export const Route = createFileRoute("/about")({
   head,
@@ -19,7 +29,7 @@ function AboutPage() {
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Magen Global brings together official government advisories, reporting from established news organisations, and information from trusted community security networks to provide a clearer picture of the evolving security environment facing Jewish communities worldwide.</p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">We distinguish between official guidance, verified news reporting, and community-reported information. Every alert identifies its source category and links to the original source wherever available, enabling users to review the underlying information and assess it for themselves.</p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Our systems automate the collection and summarisation of information. Automated summaries are intended to help users understand reported developments quickly; they are not a substitute for the original reporting, independent verification, or official security advice.</p>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Headlines from the GDELT Project are also used to help identify developing stories and link users to original publishers.</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Headline discovery feeds also help identify developing stories across regions and direct users to original reporting. A discovered headline is a lead for monitoring, not confirmation of an incident or an endorsement of every detail it contains.</p>
       </section>
       <section className="mt-8">
         <h2 className="font-display text-lg font-semibold text-foreground">How Our Alerts Are Classified</h2>
@@ -32,23 +42,32 @@ function AboutPage() {
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground"><strong className="font-semibold text-foreground">Tier 3 — Trusted Community Security</strong></p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Information reported by vetted community security networks, local security coordinators, or established neighbourhood watch contacts. These sources can provide valuable local context but are not official authorities. They are labelled <em>Trusted community security source</em>.</p>
         <h3 className="mt-5 font-display text-base font-semibold text-foreground">Severity levels</h3>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground"><strong className="font-semibold text-foreground">Critical</strong> — An imminent or life-threatening danger. Act immediately and follow official instructions.</p>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground"><strong className="font-semibold text-foreground">High</strong> — A serious, credible threat. Take protective action and monitor official channels.</p>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground"><strong className="font-semibold text-foreground">Moderate</strong> — A credible but contained threat. Stay alert and review your safety plans.</p>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground"><strong className="font-semibold text-foreground">Low</strong> — A minor or geographically limited event that warrants awareness.</p>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground"><strong className="font-semibold text-foreground">Info</strong> — Relevant context or background information with no immediate action indicated.</p>
+        <ul className="mt-4 divide-y divide-border border-y border-border">
+          {SEVERITY_GUIDE.map(({ severity, marker, description }) => (
+            <li key={severity} className="flex items-start gap-5 py-5 sm:gap-6">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center" aria-hidden="true">
+                <span className={`map-bubble h-5 w-5 ${marker}`} />
+              </div>
+              <div className="min-w-0">
+                <SeverityBadge severity={severity} />
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Severity levels are intended to support situational awareness and decision-making. They do not guarantee the safety of any location or individual, and users should always consider the circumstances on the ground and any official instructions.</p>
       </section>
       <section className="mt-8">
         <h2 className="font-display text-lg font-semibold text-foreground">Our Sources</h2>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Magen Global draws on a range of official, journalistic, and community information sources, including:</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Magen Global draws on complementary sources to help distinguish formal safety guidance, reported incidents, emerging developments, and local community context. No single source can provide a complete picture of the security environment.</p>
         <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
-          <li><strong className="font-semibold text-foreground">Official guidance:</strong> US Department of State Travel Advisories.</li>
-          <li><strong className="font-semibold text-foreground">Verified news reporting:</strong> BBC News, The Guardian, and JTA.</li>
-          <li><strong className="font-semibold text-foreground">Developing stories:</strong> Headlines identified through the GDELT Project.</li>
-          <li><strong className="font-semibold text-foreground">Community security:</strong> Information from trusted community security contacts and networks, where available.</li>
+          <li><strong className="font-semibold text-foreground">Official guidance:</strong> Government travel advisories, public safety notices, and statements from relevant authorities provide formal instructions and country-specific risk information. Their scope and date matter: guidance may apply to a particular area, activity, or period rather than an entire country.</li>
+          <li><strong className="font-semibold text-foreground">Verified news reporting:</strong> Established journalistic sources provide reporting on incidents, threats, and developments affecting Jewish communities. Automated summaries help make this reporting easier to scan, while original articles provide the fuller context, attribution, and any subsequent corrections. This classification does not mean every detail has been independently verified by Magen Global.</li>
+          <li><strong className="font-semibold text-foreground">Developing stories:</strong> Headline discovery and public reporting feeds surface emerging developments for monitoring. Early reports can be incomplete or change as more information becomes available. Developing reports are distinguished from confirmed alerts; discovery alone does not establish credibility, severity, or immediate danger.</li>
+          <li><strong className="font-semibold text-foreground">Community security:</strong> Trusted community security contacts and local networks can provide information about threats, harassment, and activity near Jewish institutions, where available. This local perspective complements official guidance and news coverage but does not replace either, and community sources are not official authorities.</li>
         </ul>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Sources are identified according to their role and classification. We encourage users to follow the original reporting and consult relevant authorities when assessing a potential threat.</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Source classification, verification status, and severity describe different aspects of an alert. An official source is not automatically an indication of critical danger, and an early report should not be treated as confirmed simply because its subject is serious.</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Where available, alerts retain links to the underlying material so users can review the original wording, publication time, location, and context. Multiple headlines may refer to the same incident rather than separate events or independent corroboration. We encourage users to consult relevant authorities and consider the latest available information when assessing a potential threat.</p>
       </section>
       <section className="mt-8">
         <h2 className="font-display text-lg font-semibold text-foreground">Transparency and Limitations</h2>

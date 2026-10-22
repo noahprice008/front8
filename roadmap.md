@@ -1,4 +1,5 @@
 # Step 11: ticker, news page, developing reports, mission
+- [ ] About: expand source explanation without organization names and reuse severity graphics; verify the page.
 - [x] Live ticker under navbar (headlines + confirmed alerts, auto-refresh 2 min, pause on hover, reduced-motion fallback).
 - [x] /news page with region + topic filters and pagination; News nav link.
 - [x] Developing reports: dashed amber ring on map, legend entry, popup line, card label, detail banner, verification filter on /alerts.
