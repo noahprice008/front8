@@ -12,7 +12,7 @@ const climateQuery = (w: ClimateWindow) =>
 const travelQuery = queryOptions({ queryKey: ["travel"], queryFn: () => getTravelData(), staleTime: 300_000 });
 
 export const Route = createFileRoute("/regions/$slug")({
-  validateSearch: (s: Record<string, unknown>): { window?: ClimateWindow } => ({ window: isWindow(s["window"]) ? s["window"] : undefined }),
+  validateSearch: (s: Record<string, unknown>): { window?: ClimateWindow | undefined } => ({ window: isWindow(s["window"]) ? s["window"] : undefined }),
   loaderDeps: ({ search }) => ({ w: search.window ?? "14d" }),
   loader: async ({ context, deps }) => {
     void context.queryClient.ensureQueryData(travelQuery);

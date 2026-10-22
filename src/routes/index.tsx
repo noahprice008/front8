@@ -33,7 +33,7 @@ const climateQuery = (w: ClimateWindow) =>
 
 export const Route = createFileRoute("/")({
   head,
-  validateSearch: (s: Record<string, unknown>): { window?: ClimateWindow } => ({
+  validateSearch: (s: Record<string, unknown>): { window?: ClimateWindow | undefined } => ({
     window: isWindow(s["window"]) ? s["window"] : undefined,
   }),
   loaderDeps: ({ search }) => ({ w: search.window ?? "7d" }),
