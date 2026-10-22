@@ -113,7 +113,9 @@ const ALERT_POINTS: Record<Severity, number> = { info: 0, low: 1, moderate: 3, h
 export const DEVELOPING_POINTS = 2;
 
 /** Score thresholds. Activity alone can raise a zone to HIGH but never to CRITICAL. */
-export const THRESHOLDS = { elevated: 4, high: 14, critical: 30 };
+export const THRESHOLDS = { elevated: 4, high: 20, critical: 30 };
+/** Activity alone needs at least this many separate reports to reach HIGH. */
+export const MIN_REPORTS_FOR_HIGH = 3;
 
 export interface ZoneInputs {
   /** Weights of activity items in the window. */
@@ -134,7 +136,7 @@ export function postureFor(z: ZoneInputs): Posture {
   const hasCritical = z.alertSeverities.includes("critical");
   const hasHigh = z.alertSeverities.includes("high");
   if (hasCritical || (score >= THRESHOLDS.critical && hasHigh)) return "CRITICAL";
-  if (hasHigh || score >= THRESHOLDS.high) return "HIGH";
+  if (hasHigh || (score >= THRESHOLDS.high && z.activityWeights.length >= MIN_REPORTS_FOR_HIGH)) return "HIGH";
   if (score >= THRESHOLDS.elevated || z.alertSeverities.includes("moderate")) return "ELEVATED";
   return "MONITORED";
 }

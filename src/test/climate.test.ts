@@ -16,6 +16,9 @@ describe("climate rules", () => {
   it("activity alone never makes a zone CRITICAL", () => {
     expect(postureFor({ activityWeights: Array(20).fill(5), alertSeverities: [], developingCount: 0 })).toBe("HIGH");
   });
+  it("two reports alone never reach HIGH", () => {
+    expect(postureFor({ activityWeights: [7, 7], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
+  });
   it("a confirmed critical alert makes a zone CRITICAL", () => {
     expect(postureFor({ activityWeights: [], alertSeverities: ["critical"], developingCount: 0 })).toBe("CRITICAL");
   });
