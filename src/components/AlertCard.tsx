@@ -21,6 +21,11 @@ export function AlertCard({ alert }: { alert: AlertListItem }) {
           </span>
         )}
       </div>
+      {alert.socialAccounts ? (
+        <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+          Also being discussed by {alert.socialAccounts} {alert.socialAccounts === 1 ? "account" : "accounts"} on social media (unverified)
+        </p>
+      ) : null}
       <h3 className="mt-2 text-base font-semibold leading-snug text-foreground">
         <Link
           to="/alerts/$id"
