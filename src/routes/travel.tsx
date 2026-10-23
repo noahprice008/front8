@@ -83,7 +83,26 @@ function TravelPage() {
         {zones.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No reports in this area yet.</p>
         ) : (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <>
+          <details className="mt-3 border border-border bg-card sm:hidden">
+            <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-medium text-foreground">
+              <span>{zones.length} destinations</span>
+              <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">
+                {zones.filter((z) => z.activeAlerts > 0).length} with alerts
+              </span>
+            </summary>
+            <ul className="max-h-80 divide-y divide-border overflow-auto border-t border-border">
+              {zones.map((z) => (
+                <li key={z.slug}>
+                  <Link to="/region/$slug" params={{ slug: z.slug }} className="flex items-center justify-between gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent/40">
+                    <span>{z.name}</span>
+                    {z.activeAlerts > 0 && z.topSeverity ? <SeverityBadge severity={z.topSeverity} size="sm" /> : <span className="text-xs text-muted-foreground">No incidents</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </details>
+          <div className="mt-3 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3">
             {zones.map((z) => (
               <Link key={z.slug} to="/region/$slug" params={{ slug: z.slug }} className="flex flex-col gap-2 border border-border bg-card p-4 hover:bg-accent/40">
                 <div className="flex items-center justify-between gap-2">
@@ -99,6 +118,7 @@ function TravelPage() {
               </Link>
             ))}
           </div>
+          </>
         )}
       </section>
 
