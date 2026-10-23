@@ -26,3 +26,8 @@
 - [x] Alerts sorted by severity then newest, outlet counts and sources
 - [x] Footer freshness stamp, "Data feeds are delayed" after 2h
 - [x] /how-it-works page
+
+# Support / giving
+- [x] Stripe Checkout (card / Apple Pay / Google Pay) with custom USD amount; PayPal removed
+- [x] Giving copy uses "Contribute", never "Donate"; button line break fixed on mobile
+- [ ] Go live on Stripe — blocked: user is keeping Stripe in test mode for now
