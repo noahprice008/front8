@@ -48,40 +48,72 @@ function RegionPage() {
   const { data } = useSuspenseQuery(climateQuery(w));
   const { data: travel } = useSuspenseQuery(travelQuery);
   const { data: detail } = useSuspenseQuery(zoneQuery(slug));
+  if (!detail) throw notFound();
   const zone = data.zones.find((z) => z.slug === slug);
-  if (!zone) throw notFound();
+  const name = detail.name;
+  const parent = detail.ancestors[detail.ancestors.length - 1];
   const items = data.stream.filter((i) => i.regionSlug === slug);
-  const advisories = travel.advisoriesByRegion[zone.regionId] ?? [];
+  const advisories = travel.advisoriesByRegion[detail.id] ?? [];
   const contact = getSecurityContact(slug);
-  const cats = Object.entries(zone.byCategory) as [ActivityCategory, number][];
+  const cats = Object.entries(zone?.byCategory ?? {}) as [ActivityCategory, number][];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <p className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Zone briefing · {slug.toUpperCase()}</p>
+      <nav aria-label="Breadcrumb" className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">
+        <ol className="flex flex-wrap items-center gap-1">
+          <li><Link to="/" className="hover:underline">Home</Link></li>
+          {detail.ancestors.map((a) => (
+            <li key={a.slug} className="flex items-center gap-1"><span aria-hidden="true">›</span><Link to="/region/$slug" params={{ slug: a.slug }} className="hover:underline">{a.name}</Link></li>
+          ))}
+          <li className="flex items-center gap-1" aria-current="page"><span aria-hidden="true">›</span>{name}</li>
+        </ol>
+      </nav>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-3xl font-bold text-foreground">{zone.name}</h1>
+        <div>
+          <h1 className="font-display text-3xl font-bold text-foreground">{name}</h1>
+          {parent && <p className="text-sm text-muted-foreground">Part of <Link to="/region/$slug" params={{ slug: parent.slug }} className="font-medium underline">{parent.name}</Link></p>}
+        </div>
         <WindowSelector value={w} onChange={(v) => navigate({ search: { window: v } })} />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4 border border-border bg-card px-4 py-3">
-        <PostureBadge p={zone.posture} />
-        <TrendLabel t={zone.trend} />
-        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Score {zone.score}</span>
+        {zone && <PostureBadge p={zone.posture} />}
+        {zone && <TrendLabel t={zone.trend} />}
+        {zone && <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Score {zone.score}</span>}
         <span className="flex items-center gap-2">
-          {detail?.topSeverity ? <SeverityBadge severity={detail.topSeverity} size="sm" /> : <span className="text-xs font-medium text-muted-foreground">No recent reports</span>}
+          {detail.topSeverity ? <SeverityBadge severity={detail.topSeverity} size="sm" /> : <span className="text-xs font-medium text-muted-foreground">No incidents reported in the last 7 days</span>}
         </span>
-        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Last updated {formatRelative(detail?.lastIngestOkAt)}</span>
+        <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">Last updated {formatRelative(detail.lastIngestOkAt)}</span>
       </div>
+
+      {detail.children.length > 0 && (
+        <section className="mt-6">
+          <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Areas in {name}</h2>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {detail.children.map((c) => (
+              <Link key={c.slug} to="/region/$slug" params={{ slug: c.slug }} className="flex items-center justify-between gap-2 border border-border bg-card px-3 py-2.5 hover:bg-accent/50">
+                <span className="text-sm font-medium text-foreground">{c.name}</span>
+                {c.activeAlerts > 0 && c.topSeverity ? <SeverityBadge severity={c.topSeverity} size="sm" /> : <span className="text-xs text-muted-foreground">No incidents</span>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mt-6">
         <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Active alerts</h2>
-        {!detail || detail.alerts.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">No active alerts for {zone.name}. No reports does not guarantee safety.</p>
+        {detail.alerts.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">No reports in this area yet. No reports does not guarantee safety.</p>
         ) : (
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">{detail.alerts.map((a) => <AlertCard key={a.id} alert={a} />)}</div>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">{detail.alerts.map((a) => (
+            <div key={a.id}>
+              {a.regionSlug !== slug && <p className="mb-1 font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">{a.regionName}</p>}
+              <AlertCard alert={a} />
+            </div>
+          ))}</div>
         )}
       </section>
 
-      {detail && (
+      {(
         <section className="mt-6 border border-border bg-card p-5">
           <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Last 7 days</h2>
           <ActivityChart days={detail.days} />
@@ -91,10 +123,10 @@ function RegionPage() {
       <section className="mt-6 border border-border bg-card p-5">
         <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Why this posture?</h2>
         <ul className="mt-2 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
-          <li>{zone.confirmedAlerts} verified incident alert{zone.confirmedAlerts === 1 ? "" : "s"}</li>
-          <li>{zone.developing} developing report{zone.developing === 1 ? "" : "s"}</li>
-          <li>{zone.activityCount} activity report{zone.activityCount === 1 ? "" : "s"} in the last {w}</li>
-          <li>{zone.institutionCount} mentioning Jewish institutions</li>
+          <li>{(zone?.confirmedAlerts ?? 0)} verified incident alert{(zone?.confirmedAlerts ?? 0) === 1 ? "" : "s"}</li>
+          <li>{(zone?.developing ?? 0)} developing report{(zone?.developing ?? 0) === 1 ? "" : "s"}</li>
+          <li>{(zone?.activityCount ?? 0)} activity report{(zone?.activityCount ?? 0) === 1 ? "" : "s"} in the last {w}</li>
+          <li>{(zone?.institutionCount ?? 0)} mentioning Jewish institutions</li>
         </ul>
         {cats.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -111,10 +143,10 @@ function RegionPage() {
         <div className="mt-2 space-y-1">
           {items.length === 0 ? <p className="text-sm text-muted-foreground">No recent activity in this time range. This does not guarantee safety.</p> : items.map((i) => <ActivityRow key={i.id} item={i} />)}
         </div>
-        <Link to="/alerts" search={{ region: slug }} className="mt-3 inline-block text-sm font-medium text-primary underline">All alerts for {zone.name}</Link>
+        <Link to="/alerts" search={{ region: slug }} className="mt-3 inline-block text-sm font-medium text-primary underline">All alerts for {name}</Link>
       </section>
 
-      {detail && detail.advisories.length > 0 ? (
+      {detail.advisories.length > 0 ? (
         <section className="mt-6">
           <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Official travel advisories</h2>
           <div className="mt-2 grid gap-3 sm:grid-cols-2">{detail.advisories.map((a) => <AlertCard key={a.id} alert={a} />)}</div>
@@ -130,7 +162,7 @@ function RegionPage() {
 
       <section className="mt-6">
         <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Recent headlines</h2>
-        {!detail || detail.headlines.length === 0 ? (
+        {detail.headlines.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No recent headlines for this zone yet.</p>
         ) : (
           <ul className="mt-2 divide-y divide-border border border-border bg-card">
@@ -146,6 +178,18 @@ function RegionPage() {
           </ul>
         )}
       </section>
+
+      {parent && (
+        <details className="mt-6 border border-border bg-card p-5">
+          <summary className="cursor-pointer font-display text-sm font-bold uppercase tracking-[0.18em]">Also see {parent.name}</summary>
+          {detail.parentAlerts.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">No reports in this area yet.</p>
+          ) : (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">{detail.parentAlerts.map((a) => <AlertCard key={a.id} alert={a} />)}</div>
+          )}
+          <Link to="/region/$slug" params={{ slug: parent.slug }} className="mt-3 inline-block text-sm font-medium text-primary underline">Open {parent.name}</Link>
+        </details>
+      )}
 
       {contact && (
         <section className="mt-6 border-l-2 border-sev-critical bg-card p-5">
