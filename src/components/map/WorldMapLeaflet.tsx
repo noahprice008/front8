@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
 import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
 import { markerStyleFor, type MapRegion, type MarkerStyle } from "@/lib/alerts.types";
 import type { ZoneClimate } from "@/lib/climate.functions";
