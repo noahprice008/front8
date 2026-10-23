@@ -86,30 +86,20 @@ export function Navbar() {
           })}
           <ZoneSearch className="hidden w-44 lg:block" />
           <Link
-            to="/contact"
-            aria-label="Contact us"
-            title="Contact us"
-            className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md border border-brand-accent text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
+            to="/support"
+            className="ml-1 inline-flex h-9 items-center whitespace-nowrap rounded-md border border-brand-accent bg-brand-accent/10 px-3 text-sm font-semibold text-brand-accent shadow-[0_0_14px_-3px_var(--brand-accent)] transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="1.5" />
-              <path d="m3 7.5 9 6 9-6" />
-            </svg>
+            Support Magen
           </Link>
           <ThemeToggle />
         </nav>
         {/* Mobile: theme toggle + menu button */}
         <div className="flex items-center gap-2 sm:hidden">
           <Link
-            to="/contact"
-            aria-label="Contact us"
-            title="Contact us"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-brand-accent text-brand-accent transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
+            to="/support"
+            className="inline-flex h-8 items-center whitespace-nowrap rounded-md border border-brand-accent bg-brand-accent/10 px-2.5 text-xs font-semibold text-brand-accent shadow-[0_0_12px_-3px_var(--brand-accent)] transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="1.5" />
-              <path d="m3 7.5 9 6 9-6" />
-            </svg>
+            Support Magen
           </Link>
           <ThemeToggle />
           <button
