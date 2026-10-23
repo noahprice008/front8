@@ -122,8 +122,7 @@ function NewsPage() {
             <option value="">All regions</option>
             {regions.map((r) => (
               <option key={r.slug} value={r.slug}>
-                {r.indent ? "   — " : ""}
-                {r.name}
+                {indentLabel(r.depth, r.name)}
               </option>
             ))}
           </select>
