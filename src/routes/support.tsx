@@ -25,7 +25,6 @@ export const Route = createFileRoute("/support")({
   component: SupportPage,
 });
 
-const PAYPAL_LINK = "https://paypal.me/MagenGlobal";
 
 const AREAS = [
   {
@@ -105,12 +104,6 @@ function SupportPage() {
     }
   }
 
-  function payPal() {
-    const value = validAmount();
-    if (value === null) return;
-    window.open(`${PAYPAL_LINK}/${value.toFixed(2)}`, "_blank", "noopener,noreferrer");
-    setNotice("PayPal checkout opened in a new tab. Thank you for your support.");
-  }
 
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-10 sm:px-6 sm:py-16">
@@ -183,14 +176,6 @@ function SupportPage() {
           >
             {busy ? "Opening secure checkout…" : "Donate with Card / Apple Pay / Google Pay"}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={payPal}
-            className="mt-2 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
-          >
-            Donate with PayPal
-          </Button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
           <p className="mt-3 text-xs text-muted-foreground">
@@ -202,7 +187,7 @@ function SupportPage() {
               <rect x="5" y="11" width="14" height="10" rx="1.5" />
               <path d="M8 11V7a4 4 0 0 1 8 0v4" />
             </svg>
-            256-bit encrypted security • Processed by Stripe or PayPal
+            256-bit encrypted security • Processed securely by Stripe
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Magen Global is an independent platform. Contributions support technology, infrastructure, and team operations.
