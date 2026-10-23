@@ -58,7 +58,6 @@ const AREAS = [
 ];
 
 function SupportPage() {
-  const [monthly, setMonthly] = useState(false);
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -118,34 +117,9 @@ function SupportPage() {
           <h2 id="contribute" className="font-display text-lg font-semibold text-foreground">
             Make a contribution
           </h2>
-          <div role="radiogroup" aria-label="Frequency" className="mt-4 grid grid-cols-2 border border-border p-1">
-            {[
-              { v: false, l: "One-Time Contribution" },
-              { v: true, l: "Monthly Support" },
-            ].map((o) => (
-              <button
-                key={o.l}
-                type="button"
-                role="radio"
-                aria-checked={monthly === o.v}
-                onClick={() => setMonthly(o.v)}
-                className={
-                  "px-2 py-2 text-xs font-semibold transition-colors sm:text-sm " +
-                  (monthly === o.v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent")
-                }
-              >
-                {o.l}
-              </button>
-              ))}
-            </div>
-            {monthly ? (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Monthly support is set up as a recurring payment in PayPal after your first contribution.
-              </p>
-            ) : null}
 
           <label htmlFor="amount" className="mt-5 block text-sm font-medium text-foreground">
-            Amount{monthly ? " per month" : ""}
+            Amount (USD)
           </label>
           <div className="mt-1.5">
             <input
@@ -162,7 +136,7 @@ function SupportPage() {
             />
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            PayPal converts automatically at checkout if your card or balance is in another currency.
+            Contributions are processed in USD. PayPal converts automatically at checkout if your card or balance is in another currency.
           </p>
           {error ? <p className="mt-1.5 text-sm text-destructive">{error}</p> : null}
 
@@ -173,6 +147,10 @@ function SupportPage() {
             Proceed to PayPal Checkout
           </button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            Prefer to give monthly? Simply repeat your contribution each month — recurring subscriptions are coming soon.
+          </p>
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
