@@ -184,9 +184,7 @@ function SupportPage() {
           </Button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
-          <p className="mt-3 text-xs text-muted-foreground">
-            Prefer to give monthly? Automatic monthly giving isn’t available yet — simply make another contribution whenever you’d like.
-          </p>
+
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
