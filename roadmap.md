@@ -1,4 +1,5 @@
 # Step 11: ticker, news page, developing reports, mission
+- [ ] Rebalance footer for desktop/mobile, remove header zone search, and expand support cards with the ad-free commitment; verify both layouts.
 - [x] About: expand source explanation without organization names and reuse severity graphics; verify the page.
 - [x] Live ticker under navbar (headlines + confirmed alerts, auto-refresh 2 min, pause on hover, reduced-motion fallback).
 - [x] /news page with region + topic filters and pagination; News nav link.

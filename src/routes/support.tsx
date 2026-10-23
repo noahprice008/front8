@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/support")({
   head: () => ({
@@ -27,17 +28,17 @@ const PAYPAL_LINK = "https://paypal.me/MagenGlobal";
 const AREAS = [
   {
     title: "Advanced Intelligence & OSINT Tools",
-    body: "Funding real-time API integrations, automated news ingestion pipelines, translation engines, and global threat monitoring services.",
+    body: "Your contribution helps fund real-time data integrations, automated news collection, translation engines, and global threat monitoring. These tools help us identify relevant developments across languages, connect reports to the right locations, and present clearer, better-sourced safety intelligence.",
     icon: <path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" />,
   },
   {
     title: "High-Availability Infrastructure",
-    body: "Scaling server capacity, high-speed push notification alerts, and enterprise-grade mapping data layers.",
+    body: "Support helps us maintain reliable hosting, expand server capacity, and improve the speed and stability of our maps and data feeds. It also supports the development of notification systems, so communities can access timely information as coverage and demand grow.",
     icon: <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />,
   },
   {
     title: "Dedicated Manpower",
-    body: "Supporting round-the-clock threat verification analysts, regional monitoring liaisons, and community safety experts.",
+    body: "Contributions help us build the capacity for ongoing review, regional monitoring, and threat verification. Investing in people means more time to check sources, distinguish developing reports from verified incidents, and maintain useful context for the communities we serve.",
     icon: (
       <>
         <circle cx="9" cy="8" r="3.5" />
@@ -47,13 +48,18 @@ const AREAS = [
   },
   {
     title: "Global & Mobile Expansion",
-    body: "Developing native mobile applications with geofenced proximity alerts to safeguard Jewish travelers and diaspora communities everywhere.",
+    body: "Support helps us expand coverage of countries and local destinations while improving access on mobile devices. It also helps fund future mobile applications and location-aware alerts, with the aim of making relevant safety information easier to reach for Jewish travelers and diaspora communities.",
     icon: (
       <>
         <rect x="6" y="2.5" width="12" height="19" rx="2" />
         <path d="M11 18h2" />
       </>
     ),
+  },
+  {
+    title: "Ad-Free & Free to Access",
+    body: "We want Magen Global to remain ad-free, with no paid upgrades or subscriptions for premium features and tools. Safety information should not depend on a user's ability to pay. Voluntary contributions help us work toward keeping our intelligence, maps, and tools freely available to everyone, without advertising or a premium tier.",
+    icon: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V6a4 4 0 0 1 8 0M12 14v3" /></>,
   },
 ];
 
@@ -97,14 +103,14 @@ function SupportPage() {
         </h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
           {AREAS.map((a) => (
-            <div key={a.title} className="border border-border border-l-2 border-l-brand-accent bg-card p-4 sm:p-5">
+            <div key={a.title} className={`rounded-md border border-border border-l-2 border-l-brand-accent bg-card p-4 sm:p-5 ${a.title === "Ad-Free & Free to Access" ? "sm:col-span-2" : ""}`}>
               <div className="flex items-start gap-3">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-brand-accent" aria-hidden="true">
                   {a.icon}
                 </svg>
                 <div>
                   <h3 className="font-display text-sm font-semibold text-foreground sm:text-base">{a.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.body}</p>
                 </div>
               </div>
             </div>
@@ -140,12 +146,12 @@ function SupportPage() {
           </p>
           {error ? <p className="mt-1.5 text-sm text-destructive">{error}</p> : null}
 
-          <button
+          <Button
             type="submit"
-            className="mt-5 w-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="mt-5 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
           >
             Proceed to PayPal Checkout
-          </button>
+          </Button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
           <p className="mt-3 text-xs text-muted-foreground">
