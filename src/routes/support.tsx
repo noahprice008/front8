@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/support")({
   head: () => ({
@@ -22,27 +22,7 @@ export const Route = createFileRoute("/support")({
   component: SupportPage,
 });
 
-const CURRENCIES = [
-  { code: "USD", symbol: "$" },
-  { code: "EUR", symbol: "€" },
-  { code: "GBP", symbol: "£" },
-  { code: "ILS", symbol: "₪" },
-] as const;
-type Currency = (typeof CURRENCIES)[number]["code"];
-
-const EURO_REGIONS = ["DE", "FR", "IT", "ES", "NL", "BE", "AT", "IE", "PT", "FI", "GR", "LU", "SK", "SI", "EE", "LV", "LT", "MT", "CY", "HR"];
-
-function detectCurrency(): Currency {
-  try {
-    const region = new Intl.Locale(navigator.language).maximize().region ?? "";
-    if (region === "IL") return "ILS";
-    if (region === "GB") return "GBP";
-    if (EURO_REGIONS.includes(region)) return "EUR";
-  } catch {
-    // fall back to USD
-  }
-  return "USD";
-}
+const PAYPAL_LINK = "https://paypal.me/MagenGlobal";
 
 const AREAS = [
   {
@@ -79,13 +59,9 @@ const AREAS = [
 
 function SupportPage() {
   const [monthly, setMonthly] = useState(false);
-  const [currency, setCurrency] = useState<Currency>("USD");
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => setCurrency(detectCurrency()), []);
-  const symbol = CURRENCIES.find((c) => c.code === currency)!.symbol;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,8 +72,9 @@ function SupportPage() {
       return;
     }
     setError(null);
-    // Checkout is connected once the Stripe account is set up.
-    setNotice("Secure checkout is being set up and will open soon. Thank you for your support.");
+    // PayPal.Me links take the amount as an optional path segment.
+    window.open(`${PAYPAL_LINK}/${value.toFixed(2)}`, "_blank", "noopener,noreferrer");
+    setNotice("PayPal checkout opened in a new tab. Thank you for your support.");
   }
 
   return (
@@ -159,48 +136,41 @@ function SupportPage() {
               >
                 {o.l}
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
+            {monthly ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Monthly support is set up as a recurring payment in PayPal after your first contribution.
+              </p>
+            ) : null}
 
           <label htmlFor="amount" className="mt-5 block text-sm font-medium text-foreground">
             Amount{monthly ? " per month" : ""}
           </label>
-          <div className="mt-1.5 flex">
-            <select
-              aria-label="Currency"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              className="border border-r-0 border-input bg-background px-2 text-sm text-foreground"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.symbol} {c.code}
-                </option>
-              ))}
-            </select>
-            <div className="relative flex-1">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{symbol}</span>
-              <input
-                id="amount"
-                type="number"
-                inputMode="decimal"
-                min={1}
-                step="any"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Enter custom amount (e.g. 25)"
-                aria-invalid={!!error}
-                className="h-11 w-full border border-input bg-background pl-8 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
+          <div className="mt-1.5">
+            <input
+              id="amount"
+              type="number"
+              inputMode="decimal"
+              min={1}
+              step="any"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter custom amount (e.g. 25)"
+              aria-invalid={!!error}
+              className="h-11 w-full border border-input bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            PayPal converts automatically at checkout if your card or balance is in another currency.
+          </p>
           {error ? <p className="mt-1.5 text-sm text-destructive">{error}</p> : null}
 
           <button
             type="submit"
             className="mt-5 w-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Proceed to Secure Checkout with Stripe
+            Proceed to PayPal Checkout
           </button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
@@ -209,7 +179,7 @@ function SupportPage() {
               <rect x="5" y="11" width="14" height="10" rx="1.5" />
               <path d="M8 11V7a4 4 0 0 1 8 0v4" />
             </svg>
-            256-bit encrypted security • Processed safely via Stripe
+            256-bit encrypted security • Processed safely via PayPal
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Magen Global is an independent platform. Contributions support technology, infrastructure, and team operations.
