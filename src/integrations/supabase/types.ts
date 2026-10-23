@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          key: string
+          kind: string
+          sent_at: string
+        }
+        Insert: {
+          key: string
+          kind: string
+          sent_at?: string
+        }
+        Update: {
+          key?: string
+          kind?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
       alert_sources: {
         Row: {
           alert_id: string
@@ -318,6 +336,21 @@ export type Database = {
         }
         Relationships: []
       }
+      news_group_terms: {
+        Row: {
+          terms: string
+          zone_group: string
+        }
+        Insert: {
+          terms: string
+          zone_group: string
+        }
+        Update: {
+          terms?: string
+          zone_group?: string
+        }
+        Relationships: []
+      }
       news_lang_terms: {
         Row: {
           lang: string
@@ -358,7 +391,9 @@ export type Database = {
           lng: number | null
           name: string
           parent_id: string | null
+          search_terms: string | null
           slug: string
+          zone_group: string
         }
         Insert: {
           covered?: boolean
@@ -369,7 +404,9 @@ export type Database = {
           lng?: number | null
           name: string
           parent_id?: string | null
+          search_terms?: string | null
           slug: string
+          zone_group?: string
         }
         Update: {
           covered?: boolean
@@ -380,7 +417,9 @@ export type Database = {
           lng?: number | null
           name?: string
           parent_id?: string | null
+          search_terms?: string | null
           slug?: string
+          zone_group?: string
         }
         Relationships: [
           {
@@ -704,16 +743,19 @@ export type Database = {
     Functions: {
       add_zone: {
         Args: {
+          p_group?: string
           p_iso: string
           p_lat: number
           p_lng: number
           p_name: string
           p_parent_slug?: string
+          p_search_terms?: string
           p_slug: string
         }
         Returns: string
       }
       apply_translations: { Args: { p_rows: Json }; Returns: Json }
+      critical_watch: { Args: never; Returns: Json }
       ensure_publisher_source: { Args: { p_name: string }; Returns: string }
       gdelt_region_groups: { Args: { p_size?: number }; Returns: Json }
       headlines_unseen: { Args: { p_articles: Json }; Returns: Json }
