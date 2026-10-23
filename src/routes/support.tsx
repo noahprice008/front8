@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { createDonationCheckout } from "@/lib/donate.functions";
 
 export const Route = createFileRoute("/support")({
   head: () => ({
@@ -67,17 +69,45 @@ function SupportPage() {
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const checkout = useServerFn(createDonationCheckout);
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("thanks")) {
+      setNotice("Thank you — your contribution was received.");
+    }
+  }, []);
+
+  function validAmount() {
     setNotice(null);
     const value = Number(amount);
     if (!amount || !Number.isFinite(value) || value < 1) {
       setError("Please enter an amount of at least 1.");
-      return;
+      return null;
     }
     setError(null);
-    // PayPal.Me links take the amount as an optional path segment.
+    return value;
+  }
+
+  async function payCard(e: React.FormEvent) {
+    e.preventDefault();
+    const value = validAmount();
+    if (value === null) return;
+    setBusy(true);
+    try {
+      const r = await checkout({ data: { amount: value } });
+      if (r.url) window.location.href = r.url;
+      else setError(r.error ?? "Could not start checkout.");
+    } catch {
+      setError("Could not start checkout. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function payPal() {
+    const value = validAmount();
+    if (value === null) return;
     window.open(`${PAYPAL_LINK}/${value.toFixed(2)}`, "_blank", "noopener,noreferrer");
     setNotice("PayPal checkout opened in a new tab. Thank you for your support.");
   }
