@@ -87,7 +87,7 @@ export function AttentionList({ zones }: { zones: ZoneClimate[] }) {
     <ol className="divide-y divide-border">
       {ranked.map((z, i) => (
         <li key={z.regionId}>
-          <Link to="/regions/$slug" params={{ slug: z.slug }} className="flex items-center gap-3 py-2.5 hover:bg-accent/50">
+          <Link to="/region/$slug" params={{ slug: z.slug }} className="flex items-center gap-3 py-2.5 hover:bg-accent/50">
             <span className="w-5 font-mono text-xs text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
             <span className="flex-1 text-sm font-semibold text-foreground">{z.name}</span>
             <span className="hidden font-mono text-[0.6875rem] text-muted-foreground sm:inline">{z.activityCount} reports</span>
