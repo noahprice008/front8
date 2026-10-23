@@ -1,4 +1,3 @@
-import { ZoneSearch } from "./ZoneSearch";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "./BrandLogo";
@@ -84,7 +83,6 @@ export function Navbar() {
               </Link>
             );
           })}
-          <ZoneSearch className="hidden w-44 lg:block" />
           <Link
             to="/support"
             className="ml-1 inline-flex h-9 items-center whitespace-nowrap rounded-md border border-brand-accent bg-brand-accent/10 px-3 text-sm font-semibold text-brand-accent shadow-[0_0_14px_-3px_var(--brand-accent)] transition-colors hover:bg-brand-accent hover:text-brand-accent-foreground"
@@ -127,7 +125,6 @@ export function Navbar() {
           aria-label="Mobile navigation"
           className="border-t border-border bg-background px-4 py-2 sm:hidden"
         >
-          <ZoneSearch className="mb-2" onDone={() => setMenuOpen(false)} />
           <ul className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
               const active =
