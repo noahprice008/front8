@@ -1,3 +1,4 @@
+import { ancestorsOf, buildZoneTree, depthOf, descendantsOf } from "./zones";
 import { createServerFn } from "@tanstack/react-start";
 import {
   CATEGORY_VALUES,
@@ -285,12 +286,14 @@ export const listAlerts = createServerFn({ method: "GET" })
       if (data.region) {
         const { data: regionRows, error: regionErr } = await supabase
           .from("regions")
-          .select("id,slug,parent_id");
+          .select("id,slug,parent_id,name")
+          .limit(5000);
         if (regionErr) throw new Error("Could not load alerts.");
-        const all = (regionRows ?? []) as { id: string; slug: string; parent_id: string | null }[];
+        const all = (regionRows ?? []) as { id: string; slug: string; parent_id: string | null; name: string }[];
         const selected = all.find((r) => r.slug === data.region);
+        const t = buildZoneTree(all.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
         const ids = selected
-          ? [selected.id, ...all.filter((r) => r.parent_id === selected.id).map((r) => r.id)]
+          ? [selected.id, ...descendantsOf(t, selected.id).map((r) => r.id)]
           : ["00000000-0000-0000-0000-000000000000"];
         query = query.in("region_id", ids);
       }
