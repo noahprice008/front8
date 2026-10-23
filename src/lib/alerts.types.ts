@@ -109,6 +109,10 @@ export interface MapRegion {
   latestAlerts: { id: string; title: string }[];
   developingAlerts: number;
   latestDeveloping: { id: string; title: string }[];
+  zoneGroup: "diaspora" | "travel";
+  /** 0 = country, 1 = nation, 2 = city. */
+  depth: number;
+  descendantCount: number;
 }
 
 export interface FeedStatus {

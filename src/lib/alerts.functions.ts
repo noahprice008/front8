@@ -1,3 +1,4 @@
+import { ancestorsOf, buildZoneTree, depthOf, descendantsOf } from "./zones";
 import { createServerFn } from "@tanstack/react-start";
 import {
   CATEGORY_VALUES,
@@ -137,11 +138,13 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ regions: MapRegion[]; feed: FeedStatus }> => {
     const supabase = await publicClient();
 
-    const [regionRes, settingsRes, alertsRes] = await Promise.all([
+    const [regionRes, settingsRes, alertsRes, groupRes] = await Promise.all([
       supabase
         .from("region_status")
         .select("id,parent_id,name,slug,iso_code,lat,lng,covered,active_alerts,top_severity")
-        .order("name"),
+        .eq("covered", true)
+        .order("name")
+        .limit(5000),
       supabase
         .from("system_settings")
         .select("autopublish_enabled,last_ingest_ok_at")
@@ -152,14 +155,16 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         .eq("status", "published")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(300),
+        .limit(1000),
+      supabase.from("regions").select("id,zone_group").eq("covered", true).limit(5000),
     ]);
 
     if (regionRes.error) throw new Error("Could not load map data.");
     if (alertsRes.error) throw new Error("Could not load map data.");
 
     const regionRows = (regionRes.data ?? []) as unknown as RegionStatusRow[];
-    const parentOf = new Map(regionRows.map((r) => [r.id, r.parent_id]));
+    const groupOf = new Map(((groupRes.data ?? []) as { id: string; zone_group: string | null }[]).map((g) => [g.id, g.zone_group]));
+    const tree = buildZoneTree(regionRows.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
     const latestByRegion = new Map<string, { id: string; title: string }[]>();
     const countByRegion = new Map<string, number>();
     const topByRegion = new Map<string, Severity>();
@@ -184,14 +189,15 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
       }
     };
     for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity; verification: string | null }[]) {
+      if (!tree.byId.has(a.region_id)) continue;
       push(a.region_id, a);
-      const parent = parentOf.get(a.region_id);
-      if (parent) push(parent, a); // roll child alerts up, like region_status does
+      // Roll every alert up to all ancestors (country > nation > city).
+      for (const anc of ancestorsOf(tree, a.region_id)) push(anc.id, a);
     }
 
     const regions: MapRegion[] = regionRows.map((row) => ({
       id: row.id,
-      parentId: row.parent_id,
+      parentId: tree.byId.has(row.parent_id ?? "") ? row.parent_id : null,
       name: row.name,
       slug: row.slug,
       isoCode: row.iso_code,
@@ -203,6 +209,9 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
       latestAlerts: latestByRegion.get(row.id) ?? [],
       developingAlerts: devCountByRegion.get(row.id) ?? 0,
       latestDeveloping: devLatestByRegion.get(row.id) ?? [],
+      zoneGroup: groupOf.get(row.id) === "travel" ? "travel" : "diaspora",
+      depth: depthOf(tree, row.id),
+      descendantCount: descendantsOf(tree, row.id).length,
     }));
 
     const settings = ((settingsRes.data ?? []) as unknown as SettingsRow[])[0];
@@ -277,12 +286,14 @@ export const listAlerts = createServerFn({ method: "GET" })
       if (data.region) {
         const { data: regionRows, error: regionErr } = await supabase
           .from("regions")
-          .select("id,slug,parent_id");
+          .select("id,slug,parent_id,name")
+          .limit(5000);
         if (regionErr) throw new Error("Could not load alerts.");
-        const all = (regionRows ?? []) as { id: string; slug: string; parent_id: string | null }[];
+        const all = (regionRows ?? []) as { id: string; slug: string; parent_id: string | null; name: string }[];
         const selected = all.find((r) => r.slug === data.region);
+        const t = buildZoneTree(all.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
         const ids = selected
-          ? [selected.id, ...all.filter((r) => r.parent_id === selected.id).map((r) => r.id)]
+          ? [selected.id, ...descendantsOf(t, selected.id).map((r) => r.id)]
           : ["00000000-0000-0000-0000-000000000000"];
         query = query.in("region_id", ids);
       }
@@ -615,6 +626,14 @@ export const listHeadlines = createServerFn({ method: "GET" })
         if (data.topic) q2 = q2.eq("topic", data.topic);
         if (data.lang === "en") q2 = q2.eq("language", "en");
         if (data.lang === "translated") q2 = q2.neq("language", "en");
+        let zoneSlugs: Set<string> | null = null;
+        if (data.region) {
+          const { data: zr } = await supabase.from("regions").select("id,slug,parent_id,name").limit(5000);
+          const zl = (zr ?? []) as { id: string; slug: string; parent_id: string | null; name: string }[];
+          const zt = buildZoneTree(zl.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
+          const sel = zl.find((r) => r.slug === data.region);
+          zoneSlugs = new Set([data.region, ...(sel ? descendantsOf(zt, sel.id).map((d) => d.slug) : [])]);
+        }
         const { data: rows, error } = await q2
           .order("published_at", { ascending: false, nullsFirst: false })
           .limit(1000);
@@ -629,7 +648,7 @@ export const listHeadlines = createServerFn({ method: "GET" })
           if (data.activity && data.activity !== "any" && c?.category !== (data.activity as ActivityCategory)) return false;
           if (data.region) {
             const slug = resolveRegionSlug(r.region_slug, r.title);
-            if (slug !== data.region && r.region_slug !== data.region) return false;
+            if (!zoneSlugs?.has(slug ?? "") && !zoneSlugs?.has(r.region_slug ?? "")) return false;
           }
           return true;
         });

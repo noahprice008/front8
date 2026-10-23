@@ -582,3 +582,19 @@ body {
   .tactical-map .leaflet-bottom.leaflet-right { margin-bottom: 4px; }
   .tactical-map .leaflet-popup-content { margin: 10px 12px; font-size: 0.8125rem; }
 }
+
+/* Zone hierarchy markers */
+.map-cluster {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 9999px;
+  background: color-mix(in oklab, var(--primary) 85%, transparent);
+  color: var(--primary-foreground); border: 2px solid var(--background);
+  font: 700 11px/1 var(--font-mono, monospace);
+}
+.map-subzone-badge {
+  position: absolute; top: -6px; right: -6px; z-index: 2;
+  min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9999px;
+  display: flex; align-items: center; justify-content: center; cursor: zoom-in;
+  background: var(--card); color: var(--foreground); border: 1px solid var(--border);
+  font: 700 10px/1 var(--font-mono, monospace);
+}

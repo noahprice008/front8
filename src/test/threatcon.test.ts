@@ -17,6 +17,9 @@ function zone(over: Partial<MapRegion>): MapRegion {
     latestAlerts: [],
     developingAlerts: 0,
     latestDeveloping: [],
+    zoneGroup: "diaspora",
+    depth: 0,
+    descendantCount: 0,
     ...over,
   };
 }

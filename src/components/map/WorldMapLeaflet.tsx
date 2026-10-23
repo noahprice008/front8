@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster/dist/MarkerCluster.css";
 import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
 import { markerStyleFor, type MapRegion, type MarkerStyle } from "@/lib/alerts.types";
 import type { ZoneClimate } from "@/lib/climate.functions";
@@ -72,9 +73,20 @@ function popupHtml(region: MapRegion, zone?: ZoneClimate): string {
       parts.push("</ul>");
     }
   }
-  if (zone) parts.push(`<p class="leaflet-bubble-note"><a href="/regions/${encodeURIComponent(region.slug)}">Open zone briefing</a></p>`);
+  if (region.descendantCount > 0) parts.push(`<p class="leaflet-bubble-note">Includes ${region.descendantCount} area${region.descendantCount === 1 ? "" : "s"}</p>`);
+  parts.push(`<p class="leaflet-bubble-note"><a href="/region/${encodeURIComponent(region.slug)}">Open zone briefing</a></p>`);
   parts.push(`<p class="leaflet-bubble-note"><a href="/alerts?region=${encodeURIComponent(region.slug)}">View all alerts for ${name}</a></p>`);
   return `<strong>${name}</strong>${coords}${parts.join("")}`;
+}
+
+function isDescendant(all: MapRegion[], r: MapRegion, ancestorId: string): boolean {
+  const byId = new Map(all.map((x) => [x.id, x]));
+  let cur = r.parentId;
+  for (let i = 0; cur && i < 10; i++) {
+    if (cur === ancestorId) return true;
+    cur = byId.get(cur)?.parentId ?? null;
+  }
+  return false;
 }
 
 export default function WorldMapClient({ regions, feedDelay, climate }: { regions: MapRegion[]; feedDelay: boolean; climate: ZoneClimate[] }) {
@@ -116,14 +128,22 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
       map.on("mousemove", (e) => setCursor(`${e.latlng.lat.toFixed(3)}°, ${e.latlng.lng.toFixed(3)}°`));
       map.on("mouseout", () => setCursor("--"));
 
-      const DETAIL_ZOOM = 4;
+      const DETAIL_ZOOM = 5;
+      (window as unknown as { L: typeof L }).L = L;
+      await import("leaflet.markercluster");
+      if (cancelled) return;
       const zoneById = new Map(climate.map((z) => [z.regionId, z]));
-      const parentsWithChildren = new Set(regions.map((r) => r.parentId).filter((id): id is string => !!id));
       const overview: LayerGroup = L.layerGroup();
-      const detail: LayerGroup = L.layerGroup();
+      const detail: LayerGroup = (L as unknown as { markerClusterGroup: (o: object) => LayerGroup }).markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 40,
+        iconCreateFunction: (c: { getChildCount: () => number }) =>
+          L.divIcon({ className: "map-bubble-anchor", html: `<div class="map-cluster">${c.getChildCount()}</div>`, iconSize: [30, 30] }),
+      });
       for (const region of regions) {
         if (region.lat == null || region.lng == null) continue;
-        const group = region.parentId ? detail : parentsWithChildren.has(region.id) ? overview : null;
+        const sub = region.depth > 0;
+        const group = sub ? detail : overview;
         const zone = zoneById.get(region.id);
         const realStyle = markerStyleFor(region);
         const climateStyle =
@@ -131,14 +151,16 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
             ? zone.posture === "ELEVATED" ? "moderate" : "high"
             : null;
         const style: string = feedDelay ? "stale" : climateStyle ?? realStyle;
-        const radius = radiusFor(realStyle, region.activeAlerts) + (showClimate && zone ? Math.min(zone.activityCount, 10) * 0.6 : 0);
+        const base = radiusFor(realStyle, region.activeAlerts) + (showClimate && zone ? Math.min(zone.activityCount, 10) * 0.6 : 0);
+        const radius = sub ? Math.max(9, base * 0.7) : base;
         const size = radius * 2;
         const posture = showClimate && zone && zone.posture !== "MONITORED" ? `<span class="map-posture map-posture--${zone.posture.toLowerCase()}" aria-hidden="true"></span>` : "";
         const activityBadge = showClimate && zone && zone.activityCount > 0 && region.activeAlerts === 0 ? `<span class="map-bubble-count">${zone.activityCount}</span>` : "";
         const devRing = region.developingAlerts > 0 ? '<span class="map-bubble-dev" aria-hidden="true"></span>' : "";
+        const subBadge = !sub && region.descendantCount > 0 ? `<span class="map-subzone-badge" title="${region.descendantCount} areas, click to zoom">${region.descendantCount}</span>` : "";
         const icon = L.divIcon({
           className: "map-bubble-anchor",
-          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${posture}${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : activityBadge}</div></div>`,
+          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${posture}${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : activityBadge}</div>${subBadge}</div>`,
           iconSize: [size, size],
           iconAnchor: [radius, radius],
           popupAnchor: [0, -radius],
@@ -150,19 +172,24 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
           keyboard: true,
           title: feedDelay ? `${region.name} (feed delayed)` : region.name,
         })
-          .addTo(group ?? map)
+          .addTo(group)
           .bindPopup(popupHtml(region, zone), { maxWidth: 320 });
-        marker.on("dblclick", () => map.flyTo([lat, lng], region.parentId ? 6 : 5, { duration: 0.8 }));
+        marker.on("click", (e) => {
+          const t = (e as unknown as { originalEvent?: MouseEvent }).originalEvent?.target as HTMLElement | undefined;
+          if (!t?.closest?.(".map-subzone-badge")) return;
+          marker.closePopup();
+          const pts = regions
+            .filter((r) => r.lat != null && r.lng != null && isDescendant(regions, r, region.id))
+            .map((r) => [r.lat!, r.lng!] as [number, number]);
+          if (pts.length) map.flyToBounds(L.latLngBounds([[lat, lng], ...pts]).pad(0.3), { maxZoom: 8, duration: 0.8 });
+        });
+        marker.on("dblclick", () => map.flyTo([lat, lng], sub ? 8 : 6, { duration: 0.8 }));
       }
+      overview.addTo(map);
       const syncZoom = () => {
         setZoom(map.getZoom());
-        if (map.getZoom() >= DETAIL_ZOOM) {
-          map.removeLayer(overview);
-          detail.addTo(map);
-        } else {
-          map.removeLayer(detail);
-          overview.addTo(map);
-        }
+        if (map.getZoom() >= DETAIL_ZOOM) detail.addTo(map);
+        else map.removeLayer(detail);
       };
       syncZoom();
       map.on("zoomend", syncZoom);

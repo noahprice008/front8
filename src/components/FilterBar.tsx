@@ -1,3 +1,4 @@
+import { indentLabel } from "@/lib/zones";
 import { useNavigate } from "@tanstack/react-router";
 import { CATEGORY_VALUES, SEVERITY_ORDER, TIER_LABELS, TIER_VALUES } from "@/lib/alerts.types";
 import { CATEGORY_LABELS, SEVERITY_LABELS } from "@/lib/alerts.types";
@@ -19,7 +20,7 @@ export function FilterBar({
   regions,
   values,
 }: {
-  regions: { slug: string; name: string; indent?: boolean }[];
+  regions: { slug: string; name: string; depth: number }[];
   values: FilterValues;
 }) {
   const navigate = useNavigate();
@@ -55,8 +56,7 @@ export function FilterBar({
           <option value="">All regions</option>
           {regions.map((r) => (
             <option key={r.slug} value={r.slug}>
-              {r.indent ? "\u00A0\u00A0\u00A0— " : ""}
-              {r.name}
+              {indentLabel(r.depth, r.name)}
             </option>
           ))}
         </select>
