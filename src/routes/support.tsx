@@ -149,7 +149,7 @@ function SupportPage() {
       </section>
 
       <section className="mx-auto mt-12 max-w-lg sm:mt-16" aria-labelledby="contribute">
-        <form onSubmit={submit} noValidate className="border border-border bg-card p-5 shadow-sm sm:p-7">
+        <form onSubmit={payCard} noValidate className="border border-border bg-card p-5 shadow-sm sm:p-7">
           <h2 id="contribute" className="font-display text-lg font-semibold text-foreground">
             Make a contribution
           </h2>
@@ -172,15 +172,24 @@ function SupportPage() {
             />
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Contributions are processed in USD. PayPal converts automatically at checkout if your card or balance is in another currency.
+            Contributions are processed in USD. Your bank converts automatically if your card is in another currency.
           </p>
           {error ? <p className="mt-1.5 text-sm text-destructive">{error}</p> : null}
 
           <Button
             type="submit"
+            disabled={busy}
             className="mt-5 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
           >
-            Proceed to PayPal Checkout
+            {busy ? "Opening secure checkout…" : "Donate with Card / Apple Pay / Google Pay"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={payPal}
+            className="mt-2 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
+          >
+            Donate with PayPal
           </Button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
@@ -193,7 +202,7 @@ function SupportPage() {
               <rect x="5" y="11" width="14" height="10" rx="1.5" />
               <path d="M8 11V7a4 4 0 0 1 8 0v4" />
             </svg>
-            256-bit encrypted security • Processed safely via PayPal
+            256-bit encrypted security • Processed by Stripe or PayPal
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Magen Global is an independent platform. Contributions support technology, infrastructure, and team operations.
