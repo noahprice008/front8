@@ -111,37 +111,13 @@ function SupportPage() {
         <span className="inline-block border border-brand-accent/50 bg-brand-accent/10 px-3 py-1 font-display text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-brand-accent sm:text-xs">
           Self-Funded &amp; Independent Intelligence
         </span>
-        <h1 className="mx-auto mt-5 max-w-3xl font-display text-3xl font-bold leading-tight text-foreground sm:text-5xl">
-          Empower Global Jewish Community Safety
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
+        <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">
           Magen Global is 100% self-funded and free for all users worldwide. Your support directly
           accelerates our technology, intelligence coverage, and operational reach.
         </p>
       </section>
 
-      <section className="mt-12 sm:mt-16" aria-labelledby="where">
-        <h2 id="where" className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          Where your support goes
-        </h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
-          {AREAS.map((a) => (
-            <div key={a.title} className={`rounded-md border border-border border-l-2 border-l-brand-accent bg-card p-4 sm:p-5 ${a.title === "Ad-Free & Free to Access" ? "sm:col-span-2" : ""}`}>
-              <div className="flex items-start gap-3">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-brand-accent" aria-hidden="true">
-                  {a.icon}
-                </svg>
-                <div>
-                  <h3 className="font-display text-sm font-semibold text-foreground sm:text-base">{a.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.body}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto mt-12 max-w-lg sm:mt-16" aria-labelledby="contribute">
+      <section className="mx-auto mt-10 max-w-lg sm:mt-12" aria-labelledby="contribute">
         <form onSubmit={payCard} noValidate className="border border-border bg-card p-5 shadow-sm sm:p-7">
           <h2 id="contribute" className="font-display text-lg font-semibold text-foreground">
             Make a contribution
@@ -150,7 +126,13 @@ function SupportPage() {
           <label htmlFor="amount" className="mt-5 block text-sm font-medium text-foreground">
             Amount (USD)
           </label>
-          <div className="mt-1.5">
+          <div className="relative mt-1.5">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-base text-muted-foreground"
+            >
+              $
+            </span>
             <input
               id="amount"
               type="number"
@@ -159,9 +141,9 @@ function SupportPage() {
               step="any"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter custom amount (e.g. 25)"
+              placeholder="Enter any amount"
               aria-invalid={!!error}
-              className="h-11 w-full border border-input bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-11 w-full border border-input bg-background py-0 pl-7 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
@@ -197,6 +179,27 @@ function SupportPage() {
             Magen Global is an independent platform. Contributions support technology, infrastructure, and team operations.
           </p>
         </form>
+      </section>
+
+      <section className="mt-12 sm:mt-16" aria-labelledby="where">
+        <h2 id="where" className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          Where your support goes
+        </h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
+          {AREAS.map((a) => (
+            <div key={a.title} className={`rounded-md border border-border border-l-2 border-l-brand-accent bg-card p-4 sm:p-5 ${a.title === "Ad-Free & Free to Access" ? "sm:col-span-2" : ""}`}>
+              <div className="flex items-start gap-3">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0 text-brand-accent" aria-hidden="true">
+                  {a.icon}
+                </svg>
+                <div>
+                  <h3 className="font-display text-sm font-semibold text-foreground sm:text-base">{a.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.body}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="mx-auto mt-10 max-w-3xl border border-border bg-muted/40 p-5 text-center sm:p-7">
