@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { createDonationCheckout } from "@/lib/donate.functions";
 
 export const Route = createFileRoute("/support")({
   head: () => ({
@@ -67,17 +69,45 @@ function SupportPage() {
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const checkout = useServerFn(createDonationCheckout);
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("thanks")) {
+      setNotice("Thank you — your contribution was received.");
+    }
+  }, []);
+
+  function validAmount() {
     setNotice(null);
     const value = Number(amount);
     if (!amount || !Number.isFinite(value) || value < 1) {
       setError("Please enter an amount of at least 1.");
-      return;
+      return null;
     }
     setError(null);
-    // PayPal.Me links take the amount as an optional path segment.
+    return value;
+  }
+
+  async function payCard(e: React.FormEvent) {
+    e.preventDefault();
+    const value = validAmount();
+    if (value === null) return;
+    setBusy(true);
+    try {
+      const r = await checkout({ data: { amount: value } });
+      if (r.url) window.location.href = r.url;
+      else setError(r.error ?? "Could not start checkout.");
+    } catch {
+      setError("Could not start checkout. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function payPal() {
+    const value = validAmount();
+    if (value === null) return;
     window.open(`${PAYPAL_LINK}/${value.toFixed(2)}`, "_blank", "noopener,noreferrer");
     setNotice("PayPal checkout opened in a new tab. Thank you for your support.");
   }
@@ -119,7 +149,7 @@ function SupportPage() {
       </section>
 
       <section className="mx-auto mt-12 max-w-lg sm:mt-16" aria-labelledby="contribute">
-        <form onSubmit={submit} noValidate className="border border-border bg-card p-5 shadow-sm sm:p-7">
+        <form onSubmit={payCard} noValidate className="border border-border bg-card p-5 shadow-sm sm:p-7">
           <h2 id="contribute" className="font-display text-lg font-semibold text-foreground">
             Make a contribution
           </h2>
@@ -142,15 +172,24 @@ function SupportPage() {
             />
           </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Contributions are processed in USD. PayPal converts automatically at checkout if your card or balance is in another currency.
+            Contributions are processed in USD. Your bank converts automatically if your card is in another currency.
           </p>
           {error ? <p className="mt-1.5 text-sm text-destructive">{error}</p> : null}
 
           <Button
             type="submit"
+            disabled={busy}
             className="mt-5 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
           >
-            Proceed to PayPal Checkout
+            {busy ? "Opening secure checkout…" : "Donate with Card / Apple Pay / Google Pay"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={payPal}
+            className="mt-2 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
+          >
+            Donate with PayPal
           </Button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
@@ -163,7 +202,7 @@ function SupportPage() {
               <rect x="5" y="11" width="14" height="10" rx="1.5" />
               <path d="M8 11V7a4 4 0 0 1 8 0v4" />
             </svg>
-            256-bit encrypted security • Processed safely via PayPal
+            256-bit encrypted security • Processed by Stripe or PayPal
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Magen Global is an independent platform. Contributions support technology, infrastructure, and team operations.
