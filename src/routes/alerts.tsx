@@ -1,3 +1,4 @@
+import { zoneOptions } from "@/lib/zones";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertCard } from "@/components/AlertCard";
@@ -90,14 +91,7 @@ function AlertsPage() {
     }),
   );
 
-  const regions = mapData.regions
-    .filter((r) => !r.parentId)
-    .flatMap((p) => [
-      { slug: p.slug, name: p.name },
-      ...mapData.regions
-        .filter((c) => c.parentId === p.id)
-        .map((c) => ({ slug: c.slug, name: c.name, indent: true })),
-    ]);
+  const regions = zoneOptions(mapData.regions);
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
 
   return (

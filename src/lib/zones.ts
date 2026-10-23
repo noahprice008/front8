@@ -119,3 +119,10 @@ export function bySeverityThenName(
   const rank = (z: typeof a) => (z.activeAlerts > 0 && z.topSeverity ? SEVERITY_ORDER.indexOf(z.topSeverity) : -1);
   return rank(b) - rank(a) || a.name.localeCompare(b.name);
 }
+
+/** Indented picker options for every zone in the tree. */
+export function zoneOptions<T extends ZoneNode>(zones: T[]): { slug: string; name: string; depth: number }[] {
+  return flattenTree(buildZoneTree(zones)).map(({ zone, depth }) => ({ slug: zone.slug, name: zone.name, depth }));
+}
+
+export const indentLabel = (depth: number, name: string) => `${"\u00A0\u00A0\u00A0".repeat(depth)}${depth ? "— " : ""}${name}`;

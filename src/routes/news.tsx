@@ -1,3 +1,4 @@
+import { indentLabel, zoneOptions } from "@/lib/zones";
 import { infiniteQueryOptions, queryOptions, useSuspenseInfiniteQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -82,15 +83,7 @@ function NewsPage() {
     return () => io.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const covered = mapData.regions.filter((r) => r.covered);
-  const regions: { slug: string; name: string; indent?: boolean }[] = covered
-    .filter((r) => !r.parentId)
-    .flatMap((p) => [
-      { slug: p.slug, name: p.name },
-      ...mapData.regions
-        .filter((c) => c.parentId === p.id)
-        .map((c) => ({ slug: c.slug, name: c.name, indent: true })),
-    ]);
+  const regions = zoneOptions(mapData.regions);
   const regionName = (slug: string | null) =>
     regions.find((r) => r.slug === slug)?.name ?? slug ?? "";
   const update = (key: "region" | "topic" | "activity" | "window" | "lang", value: string) => {
