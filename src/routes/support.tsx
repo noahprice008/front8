@@ -185,7 +185,7 @@ function SupportPage() {
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
           <p className="mt-3 text-xs text-muted-foreground">
-            Prefer to give monthly? Simply repeat your contribution each month — recurring subscriptions are coming soon.
+            Prefer to give monthly? Automatic monthly giving isn’t available yet — simply make another contribution whenever you’d like.
           </p>
 
           <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
