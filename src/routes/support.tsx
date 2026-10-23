@@ -174,7 +174,13 @@ function SupportPage() {
             disabled={busy}
             className="mt-5 h-auto min-h-11 w-full whitespace-normal px-4 py-3 text-sm font-semibold"
           >
-            {busy ? "Opening secure checkout…" : "Contribute with Card / Apple Pay / Google Pay"}
+            {busy ? (
+              "Opening secure checkout…"
+            ) : (
+              <>
+                Contribute with Card /<br className="sm:hidden" /> Apple Pay / Google Pay
+              </>
+            )}
           </Button>
           {notice ? <p role="status" className="mt-3 text-sm text-foreground">{notice}</p> : null}
 
