@@ -5,6 +5,11 @@ import { getTravelData } from "@/lib/alerts.functions";
 import type { AlertTier } from "@/lib/alerts.types";
 import { formatUtc } from "@/lib/format";
 import { getSecurityContact } from "@/lib/security-directory";
+import { getTravelZones } from "@/lib/zone.functions";
+import { SeverityBadge } from "@/components/SeverityBadge";
+import { formatRelative } from "@/lib/format";
+
+const travelZonesQuery = queryOptions({ queryKey: ["travel-zones"], queryFn: () => getTravelZones(), staleTime: 60_000 });
 
 const travelQuery = queryOptions({
   queryKey: ["travel"],
@@ -14,7 +19,10 @@ const travelQuery = queryOptions({
 
 export const Route = createFileRoute("/travel")({
   head,
-  loader: ({ context }) => context.queryClient.ensureQueryData(travelQuery),
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(travelZonesQuery);
+    return context.queryClient.ensureQueryData(travelQuery);
+  },
   component: TravelPage,
   errorComponent: RouteError,
 });
@@ -55,6 +63,7 @@ function TierTag({ tier }: { tier: AlertTier | null }) {
 
 function TravelPage() {
   const { data } = useSuspenseQuery(travelQuery);
+  const { data: zones } = useSuspenseQuery(travelZonesQuery);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -66,7 +75,35 @@ function TravelPage() {
         region, plus a short practical checklist.
       </p>
 
-      <div className="mt-8 space-y-4">
+      <section className="mt-8">
+        <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em]">Israeli travel destinations</h2>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          Alerts here cover antisemitism and attacks or threats against Israeli and Jewish travellers. For official travel warnings, check your own government's advice.
+        </p>
+        {zones.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">No reports in this area yet.</p>
+        ) : (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {zones.map((z) => (
+              <Link key={z.slug} to="/region/$slug" params={{ slug: z.slug }} className="flex flex-col gap-2 border border-border bg-card p-4 hover:bg-accent/40">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-display text-base font-semibold text-foreground">{z.name}</span>
+                  {z.activeAlerts > 0 && z.topSeverity ? <SeverityBadge severity={z.topSeverity} size="sm" /> : <span className="text-xs text-muted-foreground">No incidents</span>}
+                </div>
+                <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">{z.activeAlerts} active alert{z.activeAlerts === 1 ? "" : "s"}</span>
+                {z.latestHeadline ? (
+                  <span className="line-clamp-2 text-sm text-foreground">{z.latestHeadline.title} <span className="text-xs text-muted-foreground">· {formatRelative(z.latestHeadline.publishedAt)}</span></span>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No recent headlines.</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <h2 className="mt-10 font-display text-sm font-bold uppercase tracking-[0.18em]">Official advisories and contacts</h2>
+      <div className="mt-4 space-y-4">
         {data.regions.map((region) => {
           const sources = data.sourcesByRegion[region.id] ?? [];
           const advisories = data.advisoriesByRegion[region.id] ?? [];
