@@ -23,6 +23,7 @@ export const createDonationCheckout = createServerFn({ method: "POST" })
       "line_items[0][price_data][product_data][name]": "Contribution to Magen Global",
       success_url: `${origin}/support?thanks=1`,
       cancel_url: `${origin}/support`,
+      "managed_payments[enabled]": "false",
     });
 
     const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
