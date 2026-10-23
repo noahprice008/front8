@@ -38,6 +38,7 @@ export const Route = createFileRoute("/region/$slug")({
   },
   component: RegionPage,
   errorComponent: RouteError,
+  notFoundComponent: () => <div className="mx-auto max-w-5xl px-4 py-10 text-sm text-muted-foreground">This zone is not monitored yet. <Link to="/" className="underline">Back to the map</Link></div>,
 });
 
 function RegionPage() {

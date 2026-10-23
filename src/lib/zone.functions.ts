@@ -119,3 +119,49 @@ export const getZoneDetail = createServerFn({ method: "GET" })
     const settings = ((settingsRes.data ?? []) as { last_ingest_ok_at: string | null }[])[0];
     return { id: r.id, name: r.name, slug: r.slug, topSeverity: top, lastIngestOkAt: settings?.last_ingest_ok_at ?? null, alerts, advisories, headlines, days, ancestors, children, parentAlerts };
   });
+
+export interface TravelZoneCard {
+  name: string;
+  slug: string;
+  activeAlerts: number;
+  topSeverity: Severity | null;
+  latestHeadline: { title: string; url: string; publishedAt: string | null } | null;
+}
+
+/** Travel-destination zones with rolled-up status and their newest headline. */
+export const getTravelZones = createServerFn({ method: "GET" }).handler(async (): Promise<TravelZoneCard[]> => {
+  const supabase = await publicClient();
+  const [zonesRes, statusRes] = await Promise.all([
+    supabase.from("regions").select("id,name,slug,parent_id,zone_group").eq("covered", true).limit(5000),
+    supabase.from("region_status").select("id,active_alerts,developing_alerts,top_severity").eq("covered", true).limit(5000),
+  ]);
+  if (zonesRes.error) throw new Error("Could not load travel zones.");
+  type R = { id: string; name: string; slug: string; parent_id: string | null; zone_group: string | null };
+  const rows = (zonesRes.data ?? []) as R[];
+  const zl = rows.map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id }));
+  const tree = buildZoneTree(zl);
+  type St = { id: string; active_alerts: number | null; developing_alerts: number | null; top_severity: Severity | null };
+  const st = new Map(((statusRes.data ?? []) as St[]).map((x) => [x.id, x]));
+  const own = (z: { id: string }) => {
+    const x = st.get(z.id);
+    return { activeAlerts: Number(x?.active_alerts ?? 0), developingAlerts: Number(x?.developing_alerts ?? 0), topSeverity: x?.top_severity ?? null };
+  };
+  const travel = rows.filter((r) => r.zone_group === "travel");
+  const slugsOf = new Map(travel.map((t) => [t.id, [t.slug, ...descendantsOf(tree, t.id).map((d) => d.slug)]]));
+  const allSlugs = [...new Set([...slugsOf.values()].flat())];
+  const { data: heads } = allSlugs.length
+    ? await supabase.from("headlines").select("title,url,published_at,region_slug").eq("kept", true)
+        .in("region_slug", allSlugs).order("published_at", { ascending: false, nullsFirst: false }).limit(1000)
+    : { data: [] };
+  const newest = new Map<string, { title: string; url: string; publishedAt: string | null }>();
+  for (const h of (heads ?? []) as { title: string; url: string; published_at: string | null; region_slug: string }[])
+    if (!newest.has(h.region_slug)) newest.set(h.region_slug, { title: h.title, url: h.url, publishedAt: h.published_at });
+  return travel
+    .map((t) => {
+      const s = rollupStatus(tree, t.id, own);
+      const latest = (slugsOf.get(t.id) ?? []).map((sl) => newest.get(sl)).filter((x) => !!x)
+        .sort((a, b) => (b!.publishedAt ?? "").localeCompare(a!.publishedAt ?? ""))[0] ?? null;
+      return { name: t.name, slug: t.slug, activeAlerts: s.activeAlerts, topSeverity: s.topSeverity, latestHeadline: latest };
+    })
+    .sort(bySeverityThenName);
+});
