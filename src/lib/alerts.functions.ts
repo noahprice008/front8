@@ -626,6 +626,14 @@ export const listHeadlines = createServerFn({ method: "GET" })
         if (data.topic) q2 = q2.eq("topic", data.topic);
         if (data.lang === "en") q2 = q2.eq("language", "en");
         if (data.lang === "translated") q2 = q2.neq("language", "en");
+        let zoneSlugs: Set<string> | null = null;
+        if (data.region) {
+          const { data: zr } = await supabase.from("regions").select("id,slug,parent_id,name").limit(5000);
+          const zl = (zr ?? []) as { id: string; slug: string; parent_id: string | null; name: string }[];
+          const zt = buildZoneTree(zl.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
+          const sel = zl.find((r) => r.slug === data.region);
+          zoneSlugs = new Set([data.region, ...(sel ? descendantsOf(zt, sel.id).map((d) => d.slug) : [])]);
+        }
         const { data: rows, error } = await q2
           .order("published_at", { ascending: false, nullsFirst: false })
           .limit(1000);
@@ -640,7 +648,7 @@ export const listHeadlines = createServerFn({ method: "GET" })
           if (data.activity && data.activity !== "any" && c?.category !== (data.activity as ActivityCategory)) return false;
           if (data.region) {
             const slug = resolveRegionSlug(r.region_slug, r.title);
-            if (slug !== data.region && r.region_slug !== data.region) return false;
+            if (!zoneSlugs?.has(slug ?? "") && !zoneSlugs?.has(r.region_slug ?? "")) return false;
           }
           return true;
         });
