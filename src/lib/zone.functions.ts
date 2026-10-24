@@ -103,8 +103,7 @@ export const getZoneDetail = createServerFn({ method: "GET" })
     await attachSources(supabase, raw);
     const grouped = groupAlerts(raw, zl);
     const all = grouped.filter((a) => a.regionSlugs.some((slug) => slugs.includes(slug)));
-    const parentSlug = up[up.length - 1]?.slug;
-    const parentAlerts = grouped.filter((a) => !all.includes(a) && (!parentSlug || a.regionSlugs.includes(up[up.length - 1]!.slug) || a.regionSlugs.some((sl) => up.some((u) => u.slug === sl))));
+    const parentAlerts = grouped.filter((a) => !all.includes(a));
     const advisories = all.filter((a) => a.tier === "official");
     const alerts = all.filter((a) => !advisories.includes(a));
     let top: Severity | null = null;
