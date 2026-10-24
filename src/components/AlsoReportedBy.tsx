@@ -1,6 +1,6 @@
 import type { PublisherLink } from "@/lib/feed-grouping";
 
-export function AlsoReportedBy({ sources }: { sources?: PublisherLink[] }) {
+export function AlsoReportedBy({ sources }: { sources?: PublisherLink[] | undefined }) {
   if (!sources?.length) return null;
   const link = (source: PublisherLink) => <a key={source.publisher.toLowerCase()} href={source.url} target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2">{source.publisher}</a>;
   return <div className="mt-1 text-xs text-muted-foreground">

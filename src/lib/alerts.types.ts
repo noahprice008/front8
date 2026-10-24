@@ -122,7 +122,7 @@ export interface FeedStatus {
 }
 
 export interface AlertListItem {
-  eventKey?: string | null;
+  eventKey?: string | null | undefined;
   reportCount?: number;
   memberIds?: string[];
   regionSlugs?: string[];
