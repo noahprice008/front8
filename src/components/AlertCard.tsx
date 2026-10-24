@@ -21,6 +21,7 @@ export function AlertCard({ alert }: { alert: AlertListItem }) {
           </span>
         )}
       </div>
+      {(alert.reportCount ?? 1) > 1 && <p className="mt-1 text-[0.6875rem] text-muted-foreground">{alert.reportCount} reports combined</p>}
       {alert.socialAccounts ? (
         <p className="mt-1 text-[0.6875rem] text-muted-foreground">
           Also being discussed by {alert.socialAccounts} {alert.socialAccounts === 1 ? "account" : "accounts"} on social media (unverified)

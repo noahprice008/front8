@@ -12,3 +12,4 @@
 - Define leaf-page metadata in each route's `head` option so TanStack Router applies page-specific titles and descriptions.
 - Security climate (postures, activity classification) is derived in code from approved headlines and alerts (src/lib/climate.ts); the database schema stays unchanged, so the rubric lives in one tested module.
 - Zone hierarchy (tree, descendants, roll-ups, ordering) lives in src/lib/zones.ts and is reused by map, zone pages, travel and filters; zones are never hard-coded so the list can grow.
+- Read-only feed presentation uses the shared browser-safe feed-grouping utility after anonymous fetches and before pagination/counting; query caches retain grouped results so every consumer uses the same incident identity.

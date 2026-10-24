@@ -10,6 +10,7 @@ import { getZoneDetail } from "@/lib/zone.functions";
 import { AlertCard } from "@/components/AlertCard";
 import { SeverityBadge } from "@/components/SeverityBadge";
 import { formatRelative, languageName } from "@/lib/format";
+import { AlsoReportedBy } from "@/components/AlsoReportedBy";
 
 const zoneQuery = (slug: string) =>
   queryOptions({ queryKey: ["zone", slug], queryFn: () => getZoneDetail({ data: { slug } }), staleTime: 60_000 });
@@ -174,6 +175,7 @@ function RegionPage() {
                   {h.publisher ? `${h.publisher} · ` : ""}{formatRelative(h.publishedAt)}
                   {h.language && h.language !== "en" ? ` · Translated from ${languageName(h.language)}` : ""}
                 </p>
+                <AlsoReportedBy sources={h.alsoReportedBy} />
               </li>
             ))}
           </ul>

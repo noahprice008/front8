@@ -106,9 +106,9 @@ export interface MapRegion {
   covered: boolean;
   activeAlerts: number;
   topSeverity: Severity | null;
-  latestAlerts: { id: string; title: string }[];
+  latestAlerts: { id: string; title: string; reportCount?: number; sources?: { publisher: string | null; url: string }[] }[];
   developingAlerts: number;
-  latestDeveloping: { id: string; title: string }[];
+  latestDeveloping: { id: string; title: string; reportCount?: number; sources?: { publisher: string | null; url: string }[] }[];
   zoneGroup: "diaspora" | "travel";
   /** 0 = country, 1 = nation, 2 = city. */
   depth: number;
@@ -122,6 +122,10 @@ export interface FeedStatus {
 }
 
 export interface AlertListItem {
+  eventKey?: string | null;
+  reportCount?: number;
+  memberIds?: string[];
+  regionSlugs?: string[];
   id: string;
   title: string;
   summary: string;
@@ -176,6 +180,8 @@ export interface TravelData {
 }
 
 export interface Headline {
+  alsoReportedBy?: { publisher: string; url: string }[];
+  regionSlugs?: string[];
   id: string;
   url: string;
   title: string;
@@ -191,6 +197,7 @@ export interface Headline {
 }
 
 export interface TickerItem {
+  alsoReportedBy?: { publisher: string; url: string }[];
   kind: "alert" | "headline";
   id: string;
   title: string;

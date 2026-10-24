@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { getTickerItems } from "@/lib/alerts.functions";
 import { formatRelative } from "@/lib/format";
 import type { TickerItem } from "@/lib/alerts.types";
+import { AlsoReportedBy } from "./AlsoReportedBy";
 
 function TickerEntry({ item, hidden }: { item: TickerItem; hidden?: boolean }) {
   const body = (
@@ -82,11 +83,11 @@ export function NewsTicker() {
       <div className="ticker-viewport">
         <div className="ticker-track" style={{ animationDuration: `${duration}s` }}>
           {items.map((item) => (
-            <TickerEntry key={item.id} item={item} />
+            <div key={item.id} className="flex shrink-0 items-center gap-2"><TickerEntry item={item} /><AlsoReportedBy sources={item.alsoReportedBy} /></div>
           ))}
           {/* Duplicate copy for the seamless loop; hidden from keyboard and screen readers */}
           {items.map((item) => (
-            <TickerEntry key={`${item.id}-dup`} item={item} hidden />
+            <div key={`${item.id}-dup`} className="flex shrink-0 items-center gap-2" aria-hidden="true" inert><TickerEntry item={item} hidden /><AlsoReportedBy sources={item.alsoReportedBy} /></div>
           ))}
         </div>
       </div>

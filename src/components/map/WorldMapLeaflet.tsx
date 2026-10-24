@@ -59,7 +59,7 @@ function popupHtml(region: MapRegion, zone?: ZoneClimate): string {
     parts.push(`<p class="leaflet-bubble-note">${region.activeAlerts} active alert${region.activeAlerts === 1 ? "" : "s"} · top severity: ${escapeHtml(region.topSeverity ?? "info")}</p>`);
     if (region.latestAlerts.length > 0) {
       parts.push("<ul>");
-      for (const a of region.latestAlerts) parts.push(`<li><a href="/alerts/${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a></li>`);
+      for (const a of region.latestAlerts) parts.push(`<li><a href="/alerts/${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a>${(a.reportCount ?? 1) > 1 ? `<p class="leaflet-bubble-note">${a.reportCount} reports combined</p>` : ""}${a.sources?.length ? `<p class="leaflet-bubble-note">Sources: ${a.sources.map((source) => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.publisher ?? "Source")}</a>`).join(", ")}</p>` : ""}</li>`);
       parts.push("</ul>");
     }
   } else {
@@ -69,7 +69,7 @@ function popupHtml(region: MapRegion, zone?: ZoneClimate): string {
     parts.push(`<p class="leaflet-bubble-note">${region.developingAlerts} developing report${region.developingAlerts === 1 ? "" : "s"}, unconfirmed</p>`);
     if (region.latestDeveloping.length > 0) {
       parts.push("<ul>");
-      for (const a of region.latestDeveloping) parts.push(`<li><a href="/alerts/${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a></li>`);
+      for (const a of region.latestDeveloping) parts.push(`<li><a href="/alerts/${encodeURIComponent(a.id)}">${escapeHtml(a.title)}</a>${(a.reportCount ?? 1) > 1 ? `<p class="leaflet-bubble-note">${a.reportCount} reports combined</p>` : ""}${a.sources?.length ? `<p class="leaflet-bubble-note">Sources: ${a.sources.map((source) => `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.publisher ?? "Source")}</a>`).join(", ")}</p>` : ""}</li>`);
       parts.push("</ul>");
     }
   }
