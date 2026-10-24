@@ -15,6 +15,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Navbar } from "@/components/Navbar";
 import { NewsTicker } from "@/components/NewsTicker";
 import { Footer } from "@/components/Footer";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { getAnalyticsId } from "@/lib/analytics.functions";
 
 function NotFoundComponent() {
   return (
@@ -109,6 +111,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/favicon.png" },
     ],
   }),
+  loader: async () => ({ gaId: await getAnalyticsId().catch(() => null) }),
+  staleTime: Infinity,
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -132,6 +136,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const gaId = Route.useLoaderData()?.gaId ?? null;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -150,6 +155,7 @@ function RootComponent() {
         <Outlet />
       </main>
       <Footer />
+      <GoogleAnalytics id={gaId} />
     </QueryClientProvider>
   );
 }
