@@ -1,9 +1,12 @@
 import { groupAlerts, groupHeadlines } from "./feed-grouping";
+import { withCities } from "./cities";
+import { refinedRegion } from "./alerts.functions";
 import { createServerFn } from "@tanstack/react-start";
 import type { Severity } from "./alerts.types";
 import {
   ACTIVITY_LABELS,
   classifyHeadline,
+  isProtest,
   isWindow,
   postureFor,
   resolveRegionSlug,
@@ -44,11 +47,18 @@ export interface ZoneClimate {
   developing: number;
   byCategory: Partial<Record<ActivityCategory, number>>;
   latest: ActivityItem[];
+  /** Protests, riots, rallies and anti-Israel demonstrations in the window. */
+  protestCount: number;
+  protests: ActivityItem[];
+  /** 0 = country, 1+ = area or city. */
+  depth: number;
 }
 
 export interface ClimateData {
   window: ClimateWindow;
   zones: ZoneClimate[];
+  /** Areas and cities below the countries, for the map. */
+  areas: ZoneClimate[];
   stream: ActivityItem[];
   counts: Record<Posture, number>;
   overall: Posture;
@@ -92,19 +102,25 @@ export const getClimate = createServerFn({ method: "GET" })
     ]);
     if (regionsRes.error || headRes.error || alertRes.error) throw new Error("Could not load climate data.");
 
-    const regions = (regionsRes.data ?? []) as { id: string; name: string; slug: string; parent_id: string | null; covered: boolean }[];
+    const dbRegions = (regionsRes.data ?? []) as { id: string; name: string; slug: string; parent_id: string | null; covered: boolean }[];
+    const regions = withCities(dbRegions.map((r) => ({ ...r, parentId: r.parent_id })))
+      .map((r) => ({ id: r.id, name: r.name, slug: r.slug, parent_id: r.parentId, covered: "covered" in r ? Boolean(r.covered) : true }));
     const byId = new Map(regions.map((r) => [r.id, r]));
-    const topOf = (id: string) => {
-      const r = byId.get(id);
-      return r?.parent_id ? byId.get(r.parent_id) ?? r : r;
+    /** The zone and every ancestor, most specific first. */
+    const chainOf = (id: string) => {
+      const out: typeof regions = [];
+      let cur = byId.get(id);
+      for (let i = 0; cur && i < 6; i++) { out.push(cur); cur = cur.parent_id ? byId.get(cur.parent_id) : undefined; }
+      return out;
     };
     const bySlug = new Map(regions.map((r) => [r.slug, r]));
 
-    interface Acc { weights: number[]; recent: number; prior: number; inst: number; sev: Severity[]; dev: number; cats: Partial<Record<ActivityCategory, number>>; latest: ActivityItem[] }
+    interface Acc { weights: number[]; recent: number; prior: number; inst: number; sev: Severity[]; dev: number; cats: Partial<Record<ActivityCategory, number>>; latest: ActivityItem[]; protests: ActivityItem[] }
+    const empty = (): Acc => ({ weights: [], recent: 0, prior: 0, inst: 0, sev: [], dev: 0, cats: {}, latest: [], protests: [] });
     const acc = new Map<string, Acc>();
     const get = (id: string) => {
       let a = acc.get(id);
-      if (!a) acc.set(id, (a = { weights: [], recent: 0, prior: 0, inst: 0, sev: [], dev: 0, cats: {}, latest: [] }));
+      if (!a) acc.set(id, (a = empty()));
       return a;
     };
 
@@ -116,52 +132,53 @@ export const getClimate = createServerFn({ method: "GET" })
       if (!c) continue;
       const slug = resolveRegionSlug(h.region_slug, h.title);
       const reg = slug ? bySlug.get(slug) : undefined;
-      const top = reg ? topOf(reg.id) : undefined;
       const item: ActivityItem = {
         id: h.id, kind: "activity", title: h.title, url: h.url, publisher: h.publisher,
-        publishedAt: h.published_at, regionSlug: top?.slug ?? null, regionName: top?.name ?? null,
+        publishedAt: h.published_at, regionSlug: reg?.slug ?? null, regionName: reg?.name ?? null,
         category: c.category, categoryLabel: ACTIVITY_LABELS[c.category], nearInstitution: c.nearInstitution, severity: null,
       };
       stream.push(item);
-      if (!top) continue;
-      const a = get(top.id);
-      a.weights.push(c.weight);
-      a.cats[c.category] = (a.cats[c.category] ?? 0) + 1;
-      if (c.nearInstitution) a.inst++;
+      if (!reg) continue;
+      const protest = c.category === "protest" || isProtest(h.title);
       const t = h.published_at ? new Date(h.published_at).getTime() : 0;
-      if (t >= mid) a.recent++; else a.prior++;
-      if (a.latest.length < 5) a.latest.push(item);
+      for (const z of chainOf(reg.id)) {
+        const a = get(z.id);
+        a.weights.push(c.weight);
+        a.cats[c.category] = (a.cats[c.category] ?? 0) + 1;
+        if (c.nearInstitution) a.inst++;
+        if (t >= mid) a.recent++; else a.prior++;
+        if (a.latest.length < 5) a.latest.push(item);
+        if (protest) a.protests.push(item);
+      }
     }
 
-    const rawAlerts = ((alertRes.data ?? []) as { id: string; event_key: string | null; title: string; summary: string; region_id: string; severity: Severity; verification: string | null; published_at: string | null; issuing_authority: string | null }[]).map((al) => ({ ...al, eventKey: al.event_key, publishedAt: al.published_at, regionSlug: byId.get(al.region_id)?.slug ?? null, verification: al.verification === "developing" ? "developing" as const : "confirmed" as const }));
+    const rawAlerts = ((alertRes.data ?? []) as { id: string; event_key: string | null; title: string; summary: string; region_id: string; severity: Severity; verification: string | null; published_at: string | null; issuing_authority: string | null }[]).map((al) => ({ ...al, eventKey: al.event_key, publishedAt: al.published_at, regionSlug: refinedRegion(byId.get(al.region_id)?.slug ?? "", "", al.title).regionSlug || null, verification: al.verification === "developing" ? "developing" as const : "confirmed" as const }));
     for (const al of groupAlerts(rawAlerts, zonesForGrouping)) {
-      const top = topOf(al.region_id);
-      if (!top) continue;
-      const a = get(top.id);
+      const reg = (al.regionSlug ? bySlug.get(al.regionSlug) : undefined) ?? byId.get(al.region_id);
+      if (!reg) continue;
       const developing = al.verification === "developing";
-      if (developing) a.dev++; else a.sev.push(al.severity);
+      for (const z of chainOf(reg.id)) { const a = get(z.id); if (developing) a.dev++; else a.sev.push(al.severity); }
       stream.push({
         id: al.id, kind: developing ? "developing" : "alert", title: al.title, url: `/alerts/${al.id}`,
-        publisher: al.issuing_authority, publishedAt: al.publishedAt, regionSlug: top.slug, regionName: top.name,
+        publisher: al.issuing_authority, publishedAt: al.publishedAt, regionSlug: reg.slug, regionName: reg.name,
         category: null, categoryLabel: developing ? "Developing report" : "Verified incident", nearInstitution: false, severity: al.severity,
       });
     }
 
     const counts: Record<Posture, number> = { CRITICAL: 0, HIGH: 0, ELEVATED: 0, MONITORED: 0 };
-    const zones: ZoneClimate[] = regions
-      .filter((r) => !r.parent_id && r.covered)
-      .map((r) => {
-        const a = acc.get(r.id) ?? { weights: [], recent: 0, prior: 0, inst: 0, sev: [], dev: 0, cats: {}, latest: [] };
-        const inputs = { activityWeights: a.weights, alertSeverities: a.sev, developingCount: a.dev };
-        const posture = postureFor(inputs);
-        counts[posture]++;
-        return {
-          regionId: r.id, slug: r.slug, name: r.name, posture, score: scoreZone(inputs),
-          trend: trendFor(a.recent, a.prior), activityCount: a.weights.length, institutionCount: a.inst,
-          confirmedAlerts: a.sev.length, developing: a.dev, byCategory: a.cats, latest: a.latest,
-        };
-      })
-      .sort((x, y) => y.score - x.score);
+    const toZone = (r: (typeof regions)[number]): ZoneClimate => {
+      const a = acc.get(r.id) ?? empty();
+      const inputs = { activityWeights: a.weights, alertSeverities: a.sev, developingCount: a.dev };
+      return {
+        regionId: r.id, slug: r.slug, name: r.name, posture: postureFor(inputs), score: scoreZone(inputs),
+        trend: trendFor(a.recent, a.prior), activityCount: a.weights.length, institutionCount: a.inst,
+        confirmedAlerts: a.sev.length, developing: a.dev, byCategory: a.cats, latest: a.latest,
+        protestCount: a.protests.length, protests: a.protests.slice(0, 5), depth: chainOf(r.id).length - 1,
+      };
+    };
+    const zones: ZoneClimate[] = regions.filter((r) => !r.parent_id && r.covered).map(toZone).sort((x, y) => y.score - x.score);
+    for (const z of zones) counts[z.posture]++;
+    const areas: ZoneClimate[] = regions.filter((r) => r.parent_id && r.covered).map(toZone);
 
     stream.sort((x, y) => new Date(y.publishedAt ?? 0).getTime() - new Date(x.publishedAt ?? 0).getTime());
 
@@ -178,7 +195,7 @@ export const getClimate = createServerFn({ method: "GET" })
 
     const overall: Posture = counts.CRITICAL ? "CRITICAL" : counts.HIGH ? "HIGH" : counts.ELEVATED ? "ELEVATED" : "MONITORED";
     return {
-      window: data.window, zones, stream: stream.slice(0, 40), counts, overall,
+      window: data.window, zones, areas, stream: stream.slice(0, 40), counts, overall,
       totalActivity: zones.reduce((s, z) => s + z.activityCount, 0), callouts,
     };
   });
