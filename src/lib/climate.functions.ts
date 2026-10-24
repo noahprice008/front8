@@ -186,6 +186,9 @@ export const getClimate = createServerFn({ method: "GET" })
     const euroProtest = zones.filter((z) => EUROPE.has(z.slug) && (z.byCategory.protest ?? 0) > 0);
     if (euroProtest.length >= 2)
       callouts.push(`Demonstration activity reported in ${euroProtest.length} European countries: ${euroProtest.map((z) => z.name).join(", ")}.`);
+    const protestCities = areas.filter((z) => z.protestCount > 0).sort((x, y) => y.protestCount - x.protestCount);
+    if (protestCities.length > 0)
+      callouts.push(`Protests, rallies or riots reported in ${protestCities.length} cit${protestCities.length === 1 ? "y" : "ies"}: ${protestCities.slice(0, 6).map((z) => z.name).join(", ")}.`);
     const inst = zones.filter((z) => z.institutionCount > 0);
     if (inst.length > 0)
       callouts.push(`Reports mentioning Jewish institutions in ${inst.length} zone${inst.length === 1 ? "" : "s"}: ${inst.slice(0, 5).map((z) => z.name).join(", ")}.`);
