@@ -37,7 +37,7 @@ export const ACTIVITY_WEIGHTS: Record<ActivityCategory, number> = {
 export const INSTITUTION_BONUS = 2;
 
 /** Protests, riots, rallies and anti-Israel / "Free Palestine" mobilisation. */
-export const PROTEST = /\b(protest\w*|demonstrat\w*|rally|rallies|rallied|march(es|ed|ers)?|encampment\w*|riot\w*|unrest|clash\w*|pro-palestin\w*|free palestine|anti-israel\w*|anti-zionis\w*|intifada|from the river to the sea|boycott israel|bds|walkout\w*|sit-in\w*|blockade\w*|mob)\b/i;
+export const PROTEST = /\b(protest\w*|demonstrat\w*|rally|rallies|rallied|march(es|ed|ers|ing)|encampment\w*|riot\w*|unrest|clash\w*|pro-palestin\w*|free palestine|anti-israel\w*|anti-zionis\w*|intifada|from the river to the sea|boycott israel|bds|walkout\w*|sit-in\w*|blockade\w*|mob)\b/i;
 
 /** True when a title reports a protest, riot or rally (independent of its primary category). */
 export function isProtest(title: string): boolean {
