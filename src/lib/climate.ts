@@ -159,6 +159,17 @@ export function postureFor(z: ZoneInputs): Posture {
   return "MONITORED";
 }
 
+const POSTURE_RANK: Record<Posture, number> = { MONITORED: 0, ELEVATED: 1, HIGH: 2, CRITICAL: 3 };
+
+/**
+ * A parent zone (country/state) is scored only on reports assigned to it directly;
+ * reports in separate cities are never summed together. Its posture is the higher of
+ * its own posture and its most serious child zone.
+ */
+export function rollupPosture(own: Posture, children: Posture[]): Posture {
+  return [own, ...children].reduce((a, b) => (POSTURE_RANK[b] > POSTURE_RANK[a] ? b : a), "MONITORED" as Posture);
+}
+
 /** Compare the newer half of the window with the older half (±25% band = stable). */
 export function trendFor(recent: number, prior: number): Trend {
   if (recent === prior) return "stable";
