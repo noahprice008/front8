@@ -113,6 +113,8 @@ export interface MapRegion {
   /** 0 = country, 1 = nation, 2 = city. */
   depth: number;
   descendantCount: number;
+  /** Alerts/developing reports filed on this zone itself (not only via sub-zones). */
+  ownReports?: number;
 }
 
 export interface FeedStatus {

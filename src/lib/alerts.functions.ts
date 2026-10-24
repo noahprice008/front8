@@ -170,8 +170,15 @@ export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedS
     if (regionRes.error) throw new Error("Could not load map data.");
     if (alertsRes.error) throw new Error("Could not load map data.");
 
-    const regionRows = (regionRes.data ?? []) as unknown as RegionStatusRow[];
+    const dbRows = (regionRes.data ?? []) as unknown as RegionStatusRow[];
     const groupOf = new Map(((groupRes.data ?? []) as { id: string; zone_group: string | null }[]).map((g) => [g.id, g.zone_group]));
+    // Catalogue cities become extra zones under their database parent.
+    const regionRows: RegionStatusRow[] = [...dbRows];
+    for (const z of withCities(dbRows.map((r) => ({ id: r.id, slug: r.slug, name: r.name, parentId: r.parent_id })))) {
+      if (!("virtual" in z)) continue;
+      regionRows.push({ id: z.id, parent_id: z.parentId, name: z.name, slug: z.slug, iso_code: null, lat: z.lat, lng: z.lng, covered: true, active_alerts: 0, top_severity: null } as RegionStatusRow);
+      groupOf.set(z.id, groupOf.get(z.parentId) ?? "diaspora");
+    }
     const tree = buildZoneTree(regionRows.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
     const latestByRegion = new Map<string, MapRegion["latestAlerts"]>();
     const countByRegion = new Map<string, number>();
@@ -202,8 +209,13 @@ export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedS
       const { data: sourceRows } = await supabase.from("alert_sources").select("alert_id,publisher,url").in("alert_id", sourceItems.map((a) => a.id)).limit(1000);
       for (const source of sourceRows ?? []) sourceItems.find((a) => a.id === source.alert_id)?.sources.push({ publisher: source.publisher, url: source.url });
     }
-    const grouped = groupAlerts(sourceItems.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: tree.byId.get(a.region_id)?.slug ?? null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), [...tree.byId.values()]);
+    const grouped = groupAlerts(sourceItems.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: refinedRegion(tree.byId.get(a.region_id)?.slug ?? "", "", a.title).regionSlug || null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), [...tree.byId.values()]);
+    const ownByRegion = new Map<string, number>();
     for (const a of grouped) {
+      for (const slug of a.regionSlugs) {
+        const z = regionRows.find((r) => r.slug === slug);
+        if (z) ownByRegion.set(z.id, (ownByRegion.get(z.id) ?? 0) + 1);
+      }
       const targetIds = new Set<string>();
       for (const slug of a.regionSlugs) {
         const z = regionRows.find((r) => r.slug === slug);
@@ -231,6 +243,7 @@ export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedS
       zoneGroup: groupOf.get(row.id) === "travel" ? "travel" : "diaspora",
       depth: depthOf(tree, row.id),
       descendantCount: descendantsOf(tree, row.id).length,
+      ownReports: ownByRegion.get(row.id) ?? 0,
     }));
 
     const settings = ((settingsRes.data ?? []) as unknown as SettingsRow[])[0];
