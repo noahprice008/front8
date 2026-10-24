@@ -21,7 +21,7 @@ import {
   type TravelAdvisory,
   type VerificationFilter,
 } from "./alerts.types";
-import { ACTIVITY_LABELS, classifyHeadline, dedupeKey, isWindow, resolveRegionSlug, WINDOWS, type ActivityCategory } from "./climate";
+import { ACTIVITY_LABELS, classifyHeadline, isWindow, resolveRegionSlug, WINDOWS } from "./climate";
 import { groupAlerts, groupHeadlines } from "./feed-grouping";
 
 const FEED_DELAY_MS = 2 * 60 * 60 * 1000;
@@ -84,7 +84,7 @@ interface PublicSourceRow {
 export function mapAlertRow(row: RawAlertRow): AlertListItem {
   return {
     id: row.id,
-    eventKey: row.event_key,
+    eventKey: row.event_key ?? null,
     title: row.title,
     summary: row.summary,
     category: row.category,
@@ -166,22 +166,22 @@ export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedS
     const regionRows = (regionRes.data ?? []) as unknown as RegionStatusRow[];
     const groupOf = new Map(((groupRes.data ?? []) as { id: string; zone_group: string | null }[]).map((g) => [g.id, g.zone_group]));
     const tree = buildZoneTree(regionRows.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
-    const latestByRegion = new Map<string, { id: string; title: string }[]>();
+    const latestByRegion = new Map<string, MapRegion["latestAlerts"]>();
     const countByRegion = new Map<string, number>();
     const topByRegion = new Map<string, Severity>();
     const devCountByRegion = new Map<string, number>();
-    const devLatestByRegion = new Map<string, { id: string; title: string }[]>();
-    const push = (regionId: string, a: { id: string; title: string; severity: Severity; verification: string | null }) => {
+    const devLatestByRegion = new Map<string, MapRegion["latestDeveloping"]>();
+    const push = (regionId: string, a: { id: string; title: string; severity: Severity; verification: string | null; reportCount: number; sources: { publisher: string | null; url: string }[] }) => {
       if (a.verification === "developing") {
         // Developing reports never change the confirmed marker count or colour.
         devCountByRegion.set(regionId, (devCountByRegion.get(regionId) ?? 0) + 1);
         const devList = devLatestByRegion.get(regionId) ?? [];
-        if (devList.length < 3) devList.push({ id: a.id, title: a.title });
+        if (devList.length < 3) devList.push({ id: a.id, title: a.title, reportCount: a.reportCount, sources: a.sources });
         devLatestByRegion.set(regionId, devList);
         return;
       }
       const list = latestByRegion.get(regionId) ?? [];
-      if (list.length < 3) list.push({ id: a.id, title: a.title });
+      if (list.length < 3) list.push({ id: a.id, title: a.title, reportCount: a.reportCount, sources: a.sources });
       latestByRegion.set(regionId, list);
       countByRegion.set(regionId, (countByRegion.get(regionId) ?? 0) + 1);
       const cur = topByRegion.get(regionId);
@@ -190,7 +190,12 @@ export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedS
       }
     };
     const raw = (alertsRes.data ?? []) as { id: string; event_key: string | null; title: string; summary: string; region_id: string; severity: Severity; verification: string | null; published_at: string | null }[];
-    const grouped = groupAlerts(raw.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: tree.byId.get(a.region_id)?.slug ?? null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), [...tree.byId.values()]);
+    const sourceItems = raw.map((a) => ({ ...a, sources: [] as { publisher: string | null; url: string }[] }));
+    if (sourceItems.length) {
+      const { data: sourceRows } = await supabase.from("alert_sources").select("alert_id,publisher,url").in("alert_id", sourceItems.map((a) => a.id)).limit(1000);
+      for (const source of sourceRows ?? []) sourceItems.find((a) => a.id === source.alert_id)?.sources.push({ publisher: source.publisher, url: source.url });
+    }
+    const grouped = groupAlerts(sourceItems.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: tree.byId.get(a.region_id)?.slug ?? null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), [...tree.byId.values()]);
     for (const a of grouped) {
       const targetIds = new Set<string>();
       for (const slug of a.regionSlugs) {
@@ -199,7 +204,7 @@ export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedS
         targetIds.add(z.id);
         for (const ancestor of ancestorsOf(tree, z.id)) targetIds.add(ancestor.id);
       }
-      for (const id of targetIds) push(id, { ...a, title: a.reportCount > 1 ? `${a.title} (${a.reportCount} reports combined)` : a.title });
+      for (const id of targetIds) push(id, a);
     }
 
     const regions: MapRegion[] = regionRows.map((row) => ({

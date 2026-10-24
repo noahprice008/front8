@@ -4,7 +4,6 @@ import type { Severity } from "./alerts.types";
 import {
   ACTIVITY_LABELS,
   classifyHeadline,
-  dedupeKey,
   isWindow,
   postureFor,
   resolveRegionSlug,
