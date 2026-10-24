@@ -122,6 +122,10 @@ export interface FeedStatus {
 }
 
 export interface AlertListItem {
+  eventKey?: string | null;
+  reportCount?: number;
+  memberIds?: string[];
+  regionSlugs?: string[];
   id: string;
   title: string;
   summary: string;
@@ -176,6 +180,8 @@ export interface TravelData {
 }
 
 export interface Headline {
+  alsoReportedBy?: { publisher: string; url: string }[];
+  regionSlugs?: string[];
   id: string;
   url: string;
   title: string;
@@ -191,6 +197,7 @@ export interface Headline {
 }
 
 export interface TickerItem {
+  alsoReportedBy?: { publisher: string; url: string }[];
   kind: "alert" | "headline";
   id: string;
   title: string;
