@@ -1,3 +1,4 @@
+import { groupAlerts, groupHeadlines } from "./feed-grouping";
 import { createServerFn } from "@tanstack/react-start";
 import type { Severity } from "./alerts.types";
 import {
@@ -63,7 +64,7 @@ const EUROPE = new Set([
 
 export const getClimate = createServerFn({ method: "GET" })
   .inputValidator((input: { window?: string } | undefined) => ({
-    window: (isWindow(input?.window) ? input!.window : "7d") as ClimateWindow,
+    window: (isWindow(input?.window) ? input?.window : "7d") as ClimateWindow,
   }))
   .handler(async ({ data }): Promise<ClimateData> => {
     const { getPublicClient } = await import("@/lib/supabase-public.server");
@@ -84,7 +85,7 @@ export const getClimate = createServerFn({ method: "GET" })
         .limit(1000),
       supabase
         .from("alerts")
-        .select("id,title,region_id,severity,verification,category,published_at,issuing_authority")
+        .select("id,event_key,title,summary,region_id,severity,verification,category,published_at,issuing_authority")
         .eq("status", "published")
         .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
@@ -109,11 +110,9 @@ export const getClimate = createServerFn({ method: "GET" })
     };
 
     const stream: ActivityItem[] = [];
-    const seen = new Set<string>();
-    for (const h of (headRes.data ?? []) as { id: string; url: string; title: string; publisher: string | null; published_at: string | null; region_slug: string | null }[]) {
-      const key = dedupeKey(h.title);
-      if (seen.has(key)) continue;
-      seen.add(key);
+    const zonesForGrouping = regions.map((r) => ({ ...r, parentId: r.parent_id }));
+    const rawHeads = ((headRes.data ?? []) as { id: string; url: string; title: string; publisher: string | null; published_at: string | null; region_slug: string | null }[]).map((h) => ({ ...h, publishedAt: h.published_at, regionSlug: resolveRegionSlug(h.region_slug, h.title) ?? h.region_slug }));
+    for (const h of groupHeadlines(rawHeads, zonesForGrouping)) {
       const c = classifyHeadline(h.title);
       if (!c) continue;
       const slug = resolveRegionSlug(h.region_slug, h.title);
@@ -135,7 +134,8 @@ export const getClimate = createServerFn({ method: "GET" })
       if (a.latest.length < 5) a.latest.push(item);
     }
 
-    for (const al of (alertRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity; verification: string | null; published_at: string | null; issuing_authority: string | null }[]) {
+    const rawAlerts = ((alertRes.data ?? []) as { id: string; event_key: string | null; title: string; summary: string; region_id: string; severity: Severity; verification: string | null; published_at: string | null; issuing_authority: string | null }[]).map((al) => ({ ...al, eventKey: al.event_key, publishedAt: al.published_at, regionSlug: byId.get(al.region_id)?.slug ?? null, verification: al.verification === "developing" ? "developing" as const : "confirmed" as const }));
+    for (const al of groupAlerts(rawAlerts, zonesForGrouping)) {
       const top = topOf(al.region_id);
       if (!top) continue;
       const a = get(top.id);
@@ -143,7 +143,7 @@ export const getClimate = createServerFn({ method: "GET" })
       if (developing) a.dev++; else a.sev.push(al.severity);
       stream.push({
         id: al.id, kind: developing ? "developing" : "alert", title: al.title, url: `/alerts/${al.id}`,
-        publisher: al.issuing_authority, publishedAt: al.published_at, regionSlug: top.slug, regionName: top.name,
+        publisher: al.issuing_authority, publishedAt: al.publishedAt, regionSlug: top.slug, regionName: top.name,
         category: null, categoryLabel: developing ? "Developing report" : "Verified incident", nearInstitution: false, severity: al.severity,
       });
     }
