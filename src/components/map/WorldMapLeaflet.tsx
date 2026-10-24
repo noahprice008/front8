@@ -55,6 +55,11 @@ function popupHtml(region: MapRegion, zone?: ZoneClimate): string {
       parts.push(`<p class="leaflet-bubble-note">${zone.activityCount} activity report${zone.activityCount === 1 ? "" : "s"}: ${cats}</p>`);
     }
   }
+  if (zone && zone.protestCount > 0) {
+    parts.push(`<p class="leaflet-bubble-protest">PROTEST / RALLY ACTIVITY: ${zone.protestCount} report${zone.protestCount === 1 ? "" : "s"}</p><ul>`);
+    for (const p of zone.protests.slice(0, 3)) parts.push(`<li><a href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.title)}</a>${p.publisher ? `<p class="leaflet-bubble-note">${escapeHtml(p.publisher)}</p>` : ""}</li>`);
+    parts.push("</ul>");
+  }
   if (region.activeAlerts > 0) {
     parts.push(`<p class="leaflet-bubble-note">${region.activeAlerts} active alert${region.activeAlerts === 1 ? "" : "s"} · top severity: ${escapeHtml(region.topSeverity ?? "info")}</p>`);
     if (region.latestAlerts.length > 0) {
@@ -99,6 +104,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
   const [zoom, setZoom] = useState(HOME_ZOOM);
   const [full, setFull] = useState(false);
   const [showClimate, setShowClimate] = useState(true);
+  const [protestsOnly, setProtestsOnly] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -134,9 +140,11 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
       if (cancelled) return;
       const zoneById = new Map(climate.map((z) => [z.regionId, z]));
       const overview: LayerGroup = L.layerGroup();
+      // Cities and areas are always on the map; nearby ones cluster at wide zoom and split as you zoom in.
       const detail: LayerGroup = (L as unknown as { markerClusterGroup: (o: object) => LayerGroup }).markerClusterGroup({
         showCoverageOnHover: false,
-        maxClusterRadius: 40,
+        maxClusterRadius: (z: number) => (z <= 3 ? 34 : z <= 5 ? 24 : 14),
+        spiderfyOnMaxZoom: true,
         iconCreateFunction: (c: { getChildCount: () => number }) =>
           L.divIcon({ className: "map-bubble-anchor", html: `<div class="map-cluster">${c.getChildCount()}</div>`, iconSize: [30, 30] }),
       });
@@ -145,10 +153,14 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         const sub = region.depth > 0;
         const group = sub ? detail : overview;
         const zone = zoneById.get(region.id);
+        // A country split into cities only keeps its own bubble for reports filed on the country itself.
+        if (!sub && region.descendantCount > 0 && (region.ownReports ?? 0) === 0) continue;
+        if (protestsOnly && !(zone && zone.protestCount > 0)) continue;
         const realStyle = markerStyleFor(region);
+        const protests = zone?.protestCount ?? 0;
         const climateStyle =
-          showClimate && zone && region.activeAlerts === 0 && zone.posture !== "MONITORED"
-            ? zone.posture === "ELEVATED" ? "moderate" : "high"
+          showClimate && zone && region.activeAlerts === 0 && (zone.posture !== "MONITORED" || protests > 0)
+            ? zone.posture === "HIGH" || zone.posture === "CRITICAL" ? "high" : "moderate"
             : null;
         const style: string = feedDelay ? "stale" : climateStyle ?? realStyle;
         const base = radiusFor(realStyle, region.activeAlerts) + (showClimate && zone ? Math.min(zone.activityCount, 10) * 0.6 : 0);
@@ -157,10 +169,11 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         const posture = showClimate && zone && zone.posture !== "MONITORED" ? `<span class="map-posture map-posture--${zone.posture.toLowerCase()}" aria-hidden="true"></span>` : "";
         const activityBadge = showClimate && zone && zone.activityCount > 0 && region.activeAlerts === 0 ? `<span class="map-bubble-count">${zone.activityCount}</span>` : "";
         const devRing = region.developingAlerts > 0 ? '<span class="map-bubble-dev" aria-hidden="true"></span>' : "";
+        const protestBadge = protests > 0 ? `<span class="map-protest-badge" title="${protests} protest / rally report${protests === 1 ? "" : "s"}">${protests}</span>` : "";
         const subBadge = !sub && region.descendantCount > 0 ? `<span class="map-subzone-badge" title="${region.descendantCount} areas, click to zoom">${region.descendantCount}</span>` : "";
         const icon = L.divIcon({
           className: "map-bubble-anchor",
-          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${posture}${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : activityBadge}</div>${subBadge}</div>`,
+          html: `<div class="map-bubble-wrap" style="width:${size}px;height:${size}px">${posture}${devRing}<div class="map-bubble map-bubble--${style}" style="width:${size}px;height:${size}px" aria-hidden="true">${region.activeAlerts > 0 ? `<span class="map-bubble-count">${region.activeAlerts}</span>` : activityBadge}</div>${protestBadge}${subBadge}</div>`,
           iconSize: [size, size],
           iconAnchor: [radius, radius],
           popupAnchor: [0, -radius],
@@ -170,7 +183,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         const marker = L.marker([lat, lng], {
           icon,
           keyboard: true,
-          title: feedDelay ? `${region.name} (feed delayed)` : region.name,
+          title: feedDelay ? `${region.name} (feed delayed)` : protests > 0 ? `${region.name} (protest activity)` : region.name,
         })
           .addTo(group)
           .bindPopup(popupHtml(region, zone), { maxWidth: 320 });
@@ -186,11 +199,8 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         marker.on("dblclick", () => map.flyTo([lat, lng], sub ? 8 : 6, { duration: 0.8 }));
       }
       overview.addTo(map);
-      const syncZoom = () => {
-        setZoom(map.getZoom());
-        if (map.getZoom() >= DETAIL_ZOOM) detail.addTo(map);
-        else map.removeLayer(detail);
-      };
+      detail.addTo(map);
+      const syncZoom = () => setZoom(map.getZoom());
       syncZoom();
       map.on("zoomend", syncZoom);
       setReady(true);
@@ -203,7 +213,7 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
       tilesRef.current = [];
       setReady(false);
     };
-  }, [regions, feedDelay, climate, showClimate]);
+  }, [regions, feedDelay, climate, showClimate, protestsOnly]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -269,6 +279,9 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
         <div className={`${menuOpen ? "flex" : "hidden"} tactical-panel flex-wrap justify-end gap-1 p-1 sm:flex`}>
           <button type="button" aria-pressed={showClimate} onClick={() => setShowClimate((v) => !v)} className={`${btn} ${showClimate ? "bg-brand-accent text-brand-accent-foreground" : "text-foreground hover:bg-accent"}`}>
             Climate layer
+          </button>
+          <button type="button" aria-pressed={protestsOnly} onClick={() => setProtestsOnly((v) => !v)} className={`${btn} ${protestsOnly ? "bg-brand-accent text-brand-accent-foreground" : "text-foreground hover:bg-accent"}`}>
+            Protests only
           </button>
           <button type="button" className={`${btn} text-foreground hover:bg-accent`} onClick={() => mapRef.current?.flyTo(homeView(), HOME_ZOOM, { duration: 0.8 })}>
             Reset view
