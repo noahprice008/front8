@@ -123,6 +123,13 @@ export const getClimate = createServerFn({ method: "GET" })
       if (!a) acc.set(id, (a = empty()));
       return a;
     };
+    // Signals assigned directly to a zone (not rolled up from its cities).
+    const own = new Map<string, Acc>();
+    const getOwn = (id: string) => {
+      let a = own.get(id);
+      if (!a) own.set(id, (a = empty()));
+      return a;
+    };
 
     const stream: ActivityItem[] = [];
     const zonesForGrouping = regions.map((r) => ({ ...r, parentId: r.parent_id }));
@@ -141,6 +148,7 @@ export const getClimate = createServerFn({ method: "GET" })
       if (!reg) continue;
       const protest = c.category === "protest" || isProtest(h.title);
       const t = h.published_at ? new Date(h.published_at).getTime() : 0;
+      getOwn(reg.id).weights.push(c.weight);
       for (const z of chainOf(reg.id)) {
         const a = get(z.id);
         a.weights.push(c.weight);
@@ -157,6 +165,7 @@ export const getClimate = createServerFn({ method: "GET" })
       const reg = (al.regionSlug ? bySlug.get(al.regionSlug) : undefined) ?? byId.get(al.region_id);
       if (!reg) continue;
       const developing = al.verification === "developing";
+      if (developing) getOwn(reg.id).dev++; else getOwn(reg.id).sev.push(al.severity);
       for (const z of chainOf(reg.id)) { const a = get(z.id); if (developing) a.dev++; else a.sev.push(al.severity); }
       stream.push({
         id: al.id, kind: developing ? "developing" : "alert", title: al.title, url: `/alerts/${al.id}`,
@@ -166,11 +175,27 @@ export const getClimate = createServerFn({ method: "GET" })
     }
 
     const counts: Record<Posture, number> = { CRITICAL: 0, HIGH: 0, ELEVATED: 0, MONITORED: 0 };
+    const childrenOf = new Map<string, typeof regions>();
+    for (const r of regions) if (r.parent_id) childrenOf.set(r.parent_id, [...(childrenOf.get(r.parent_id) ?? []), r]);
+    const memo = new Map<string, { posture: Posture; score: number }>();
+    const levelOf = (id: string, depth = 0): { posture: Posture; score: number } => {
+      const hit = memo.get(id);
+      if (hit) return hit;
+      const o = own.get(id) ?? empty();
+      const inputs = { activityWeights: o.weights, alertSeverities: o.sev, developingCount: o.dev };
+      const kids = depth < 6 ? (childrenOf.get(id) ?? []).map((k) => levelOf(k.id, depth + 1)) : [];
+      const res = {
+        posture: rollupPosture(postureFor(inputs), kids.map((k) => k.posture)),
+        score: Math.max(scoreZone(inputs), ...kids.map((k) => k.score), 0),
+      };
+      memo.set(id, res);
+      return res;
+    };
     const toZone = (r: (typeof regions)[number]): ZoneClimate => {
       const a = acc.get(r.id) ?? empty();
-      const inputs = { activityWeights: a.weights, alertSeverities: a.sev, developingCount: a.dev };
+      const lvl = levelOf(r.id);
       return {
-        regionId: r.id, slug: r.slug, name: r.name, posture: postureFor(inputs), score: scoreZone(inputs),
+        regionId: r.id, slug: r.slug, name: r.name, posture: lvl.posture, score: lvl.score,
         trend: trendFor(a.recent, a.prior), activityCount: a.weights.length, institutionCount: a.inst,
         confirmedAlerts: a.sev.length, developing: a.dev, byCategory: a.cats, latest: a.latest,
         protestCount: a.protests.length, protests: a.protests.slice(0, 5), depth: chainOf(r.id).length - 1,
@@ -179,6 +204,8 @@ export const getClimate = createServerFn({ method: "GET" })
     const zones: ZoneClimate[] = regions.filter((r) => !r.parent_id && r.covered).map(toZone).sort((x, y) => y.score - x.score);
     for (const z of zones) counts[z.posture]++;
     const areas: ZoneClimate[] = regions.filter((r) => r.parent_id && r.covered).map(toZone);
+    // Every monitored zone (countries and their cities) counts toward the posture totals.
+    for (const z of areas) counts[z.posture]++;
 
     stream.sort((x, y) => new Date(y.publishedAt ?? 0).getTime() - new Date(x.publishedAt ?? 0).getTime());
 
