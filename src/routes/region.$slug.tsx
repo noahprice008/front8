@@ -54,7 +54,7 @@ function RegionPage() {
   const zone = [...data.zones, ...data.areas].find((z) => z.slug === slug);
   const name = detail.name;
   const parent = detail.ancestors[detail.ancestors.length - 1];
-  const items = data.stream.filter((i) => i.regionSlug === slug);
+  const items = data.stream.filter((i) => i.regionSlug != null && detail.familySlugs.includes(i.regionSlug));
   const advisories = travel.advisoriesByRegion[detail.id] ?? [];
   const contact = getSecurityContact(slug);
   const cats = Object.entries(zone?.byCategory ?? {}) as [ActivityCategory, number][];

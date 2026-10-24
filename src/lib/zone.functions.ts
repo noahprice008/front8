@@ -1,7 +1,9 @@
 import { groupAlerts, groupHeadlines } from "./feed-grouping";
 import { createServerFn } from "@tanstack/react-start";
 import { SEVERITY_ORDER, type AlertListItem, type Headline, type Severity } from "./alerts.types";
-import { readMapData, attachSources } from "./alerts.functions";
+import { readMapData, attachSources, refinedRegion } from "./alerts.functions";
+import { isVirtualZoneId, withCities } from "./cities";
+import { resolveRegionSlug } from "./climate";
 import { ancestorsOf, buildZoneTree, bySeverityThenName, descendantsOf, rollupStatus } from "./zones";
 
 async function publicClient() {
@@ -21,6 +23,8 @@ export interface ZoneDetail {
   ancestors: { name: string; slug: string }[];
   children: { name: string; slug: string; activeAlerts: number; developingAlerts: number; topSeverity: Severity | null }[];
   parentAlerts: AlertListItem[];
+  /** This zone and every zone below it. */
+  familySlugs: string[];
   /** Last 7 days, oldest first, GMT dates (YYYY-MM-DD). */
   days: { date: string; headlines: number; alerts: number }[];
 }
@@ -37,8 +41,9 @@ export const getZoneDetail = createServerFn({ method: "GET" })
       supabase.from("region_status").select("id,active_alerts,developing_alerts,top_severity").eq("covered", true).limit(5000),
     ]);
     type Z = { id: string; name: string; slug: string; parentId: string | null };
-    const zl: Z[] = ((zonesRes.data ?? []) as { id: string; name: string; slug: string; parent_id: string | null }[])
-      .map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id }));
+    const zl: Z[] = withCities(((zonesRes.data ?? []) as { id: string; name: string; slug: string; parent_id: string | null }[])
+      .map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id })))
+      .map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parentId }));
     const tree = buildZoneTree(zl);
     const r = zl.find((z) => z.slug === data.slug);
     if (!r) return null;
@@ -54,8 +59,11 @@ export const getZoneDetail = createServerFn({ method: "GET" })
       .map((c) => ({ name: c.name, slug: c.slug, ...rollupStatus(tree, c.id, own) }))
       .sort(bySeverityThenName);
     const parentId = r.parentId;
-    const ids = [r.id, ...desc.map((k) => k.id)];
     const slugs = [r.slug, ...desc.map((k) => k.slug)];
+    // Cities from the catalogue have no database rows: read their country's items and route by title.
+    const up = ancestorsOf(tree, r.id);
+    const ids = [...new Set([r.id, ...desc.map((k) => k.id), ...up.map((a) => a.id)])].filter((id) => !isVirtualZoneId(id));
+    const headSlugs = [...new Set([...slugs, ...up.map((a) => a.slug), "global"])];
     const now = new Date().toISOString();
     const weekAgo = new Date(Date.now() - 7 * 86_400_000);
     weekAgo.setUTCHours(0, 0, 0, 0);
@@ -66,13 +74,13 @@ export const getZoneDetail = createServerFn({ method: "GET" })
         .gt("expires_at", now).order("severity", { ascending: false })
         .order("published_at", { ascending: false, nullsFirst: false }).limit(1000),
       supabase.from("headlines").select("id,url,title,publisher,published_at,region_slug,topic,language,title_original")
-        .eq("kept", true).in("region_slug", slugs).order("published_at", { ascending: false, nullsFirst: false }).limit(200),
-      supabase.from("headlines").select("id,url,title,publisher,published_at,region_slug").eq("kept", true).in("region_slug", slugs)
+        .eq("kept", true).in("region_slug", headSlugs).order("published_at", { ascending: false, nullsFirst: false }).limit(200),
+      supabase.from("headlines").select("id,url,title,publisher,published_at,region_slug").eq("kept", true).in("region_slug", headSlugs)
         .gte("published_at", since).limit(1000),
       supabase.from("alerts").select(ALERT_COLS).eq("status", "published").in("region_id", ids)
         .gte("published_at", since).limit(1000),
       supabase.from("system_settings").select("last_ingest_ok_at").limit(1),
-      parentId
+      parentId && !isVirtualZoneId(parentId)
         ? supabase.from("alerts").select(ALERT_COLS).eq("status", "published").eq("region_id", parentId)
             .gt("expires_at", now).order("published_at", { ascending: false, nullsFirst: false }).limit(100)
         : Promise.resolve({ data: [] as unknown[] }),
@@ -88,14 +96,15 @@ export const getZoneDetail = createServerFn({ method: "GET" })
     const toItem = (a: Row): AlertListItem => ({
       id: a.id, eventKey: a.event_key, title: a.title, summary: a.summary, category: a.category, severity: a.severity, tier: a.tier,
       issuingAuthority: a.issuing_authority, autoPublished: a.auto_published, publishedAt: a.published_at,
-      expiresAt: a.expires_at, lastReviewedAt: a.last_reviewed_at, regionName: a.regions?.name ?? r.name,
-      regionSlug: a.regions?.slug ?? r.slug, verification: a.verification === "developing" ? "developing" : "confirmed",
+      expiresAt: a.expires_at, lastReviewedAt: a.last_reviewed_at,
+      ...refinedRegion(a.regions?.slug ?? r.slug, a.regions?.name ?? r.name, a.title), verification: a.verification === "developing" ? "developing" : "confirmed",
     });
     const raw = [...((alertsRes.data ?? []) as unknown as Row[]), ...((parentRes.data ?? []) as unknown as Row[])].map(toItem);
     await attachSources(supabase, raw);
     const grouped = groupAlerts(raw, zl);
     const all = grouped.filter((a) => a.regionSlugs.some((slug) => slugs.includes(slug)));
-    const parentAlerts = grouped.filter((a) => !all.includes(a));
+    const parentSlug = up[up.length - 1]?.slug;
+    const parentAlerts = grouped.filter((a) => !all.includes(a) && (!parentSlug || a.regionSlugs.includes(up[up.length - 1]!.slug) || a.regionSlugs.some((sl) => up.some((u) => u.slug === sl))));
     const advisories = all.filter((a) => a.tier === "official");
     const alerts = all.filter((a) => !advisories.includes(a));
     let top: Severity | null = null;
@@ -109,21 +118,22 @@ export const getZoneDetail = createServerFn({ method: "GET" })
       const day = days.find((d) => d.date === iso?.slice(0, 10));
       if (day) day[key] += 1;
     };
-    const dailyHeads = ((headDaysRes.data ?? []) as { id: string; url: string; title: string; publisher: string | null; published_at: string | null; region_slug: string | null }[]).map((h) => ({ ...h, publishedAt: h.published_at, regionSlug: h.region_slug }));
+    const dailyHeads = ((headDaysRes.data ?? []) as { id: string; url: string; title: string; publisher: string | null; published_at: string | null; region_slug: string | null }[]).map((h) => ({ ...h, publishedAt: h.published_at, regionSlug: resolveRegionSlug(h.region_slug, h.title) ?? h.region_slug }))
+      .filter((h) => h.regionSlug && slugs.includes(h.regionSlug));
     for (const h of groupHeadlines(dailyHeads, zl)) bump(h.publishedAt, "headlines");
-    for (const a of groupAlerts(((alertDaysRes.data ?? []) as unknown as Row[]).map(toItem), zl)) bump(a.publishedAt, "alerts");
+    for (const a of groupAlerts(((alertDaysRes.data ?? []) as unknown as Row[]).map(toItem).filter((a) => slugs.includes(a.regionSlug)), zl)) bump(a.publishedAt, "alerts");
 
     type H = { id: string; url: string; title: string; publisher: string | null; published_at: string | null; region_slug: string | null; topic: string | null; language: string | null; title_original: string | null };
     const headlines: Headline[] = groupHeadlines(((headRes.data ?? []) as unknown as H[]).map((h) => ({
       id: h.id, url: h.url, title: h.title, publisher: h.publisher, publishedAt: h.published_at,
-      regionSlug: h.region_slug, topic: h.topic, language: h.language ?? "en",
+      regionSlug: resolveRegionSlug(h.region_slug, h.title) ?? h.region_slug, topic: h.topic, language: h.language ?? "en",
       titleOriginal: h.language && h.language !== "en" ? h.title_original : null,
-    })), zl).slice(0, 20);
+    })).filter((h) => h.regionSlug && slugs.includes(h.regionSlug)), zl).slice(0, 20);
 
     const map = await readMapData();
     children = children.map((c) => { const status = map.regions.find((z) => z.slug === c.slug); return status ? { ...c, activeAlerts: status.activeAlerts, developingAlerts: status.developingAlerts, topSeverity: status.topSeverity } : c; });
     const settings = ((settingsRes.data ?? []) as { last_ingest_ok_at: string | null }[])[0];
-    return { id: r.id, name: r.name, slug: r.slug, topSeverity: top, lastIngestOkAt: settings?.last_ingest_ok_at ?? null, alerts, advisories, headlines, days, ancestors, children, parentAlerts };
+    return { id: r.id, name: r.name, slug: r.slug, topSeverity: top, lastIngestOkAt: settings?.last_ingest_ok_at ?? null, alerts, advisories, headlines, days, ancestors, children, parentAlerts, familySlugs: slugs };
   });
 
 export interface TravelZoneCard {
