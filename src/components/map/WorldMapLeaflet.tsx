@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import "leaflet.markercluster/dist/MarkerCluster.css";
-import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
-import { markerStyleFor, type MapRegion, type MarkerStyle } from "@/lib/alerts.types";
+import type { LayerGroup, Marker, Map as LeafletMap, TileLayer } from "leaflet";
+import { clusterAlertStatus, markerStyleFor, type MapRegion, type MarkerStyle } from "@/lib/alerts.types";
 import type { ZoneClimate } from "@/lib/climate.functions";
 import { ACTIVITY_LABELS, type ActivityCategory } from "@/lib/climate";
 
@@ -139,13 +139,22 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
       if (cancelled) return;
       const zoneById = new Map(climate.map((z) => [z.regionId, z]));
       const overview: LayerGroup = L.layerGroup();
+      const markerRegions = new WeakMap<Marker, MapRegion>();
       // Cities and areas are always on the map; nearby ones cluster at wide zoom and split as you zoom in.
       const detail: LayerGroup = (L as unknown as { markerClusterGroup: (o: object) => LayerGroup }).markerClusterGroup({
         showCoverageOnHover: false,
         maxClusterRadius: (z: number) => (z <= 3 ? 34 : z <= 5 ? 24 : 14),
         spiderfyOnMaxZoom: true,
-        iconCreateFunction: (c: { getChildCount: () => number }) =>
-          L.divIcon({ className: "map-bubble-anchor", html: `<div class="map-cluster">${c.getChildCount()}</div>`, iconSize: [30, 30] }),
+        iconCreateFunction: (c: { getChildCount: () => number; getAllChildMarkers: () => Marker[] }) => {
+          const members = c.getAllChildMarkers().flatMap((marker) => {
+            const region = markerRegions.get(marker);
+            return region ? [region] : [];
+          });
+          const status = clusterAlertStatus(members);
+          const count = c.getChildCount();
+          const label = `${count} zones · ${feedDelay ? "feed delayed" : status.topSeverity ? `highest active alert: ${status.topSeverity}` : status.activeAlerts > 0 ? "active alerts" : "no active alerts"}`;
+          return L.divIcon({ className: "map-bubble-anchor", html: `<div class="map-cluster map-bubble--${feedDelay ? "stale" : status.style}" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${count}</div>`, iconSize: [30, 30] });
+        },
       });
       for (const region of regions) {
         if (region.lat == null || region.lng == null) continue;
@@ -183,9 +192,9 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
           icon,
           keyboard: true,
           title: feedDelay ? `${region.name} (feed delayed)` : protests > 0 ? `${region.name} (protest activity)` : region.name,
-        })
-          .addTo(group)
-          .bindPopup(popupHtml(region, zone), { maxWidth: 320 });
+        }).bindPopup(popupHtml(region, zone), { maxWidth: 320 });
+        markerRegions.set(marker, region);
+        marker.addTo(group);
         marker.on("click", (e) => {
           const t = (e as unknown as { originalEvent?: MouseEvent }).originalEvent?.target as HTMLElement | undefined;
           if (!t?.closest?.(".map-subzone-badge")) return;
