@@ -51,7 +51,7 @@ function RegionPage() {
   const { data: travel } = useSuspenseQuery(travelQuery);
   const { data: detail } = useSuspenseQuery(zoneQuery(slug));
   if (!detail) throw notFound();
-  const zone = data.zones.find((z) => z.slug === slug);
+  const zone = [...data.zones, ...data.areas].find((z) => z.slug === slug);
   const name = detail.name;
   const parent = detail.ancestors[detail.ancestors.length - 1];
   const items = data.stream.filter((i) => i.regionSlug === slug);

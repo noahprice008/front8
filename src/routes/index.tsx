@@ -139,7 +139,7 @@ function HomePage() {
             feedDelay={data.feed.feedDelay}
             autopublishPaused={!data.feed.autopublishEnabled}
           />
-          <WorldMap regions={data.regions} feedDelay={data.feed.feedDelay} climate={climate.zones} />
+          <WorldMap regions={data.regions} feedDelay={data.feed.feedDelay} climate={[...climate.zones, ...climate.areas]} />
         </div>
       </section>
 
