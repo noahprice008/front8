@@ -1,4 +1,5 @@
 import type { Severity } from "./alerts.types";
+import { cityFor } from "./cities";
 
 /** Activity categories derived from approved headlines (no database change). */
 export type ActivityCategory =
@@ -35,12 +36,20 @@ export const ACTIVITY_WEIGHTS: Record<ActivityCategory, number> = {
 /** Extra weight when the item mentions a Jewish institution. */
 export const INSTITUTION_BONUS = 2;
 
+/** Protests, riots, rallies and anti-Israel / "Free Palestine" mobilisation. */
+export const PROTEST = /\b(protest\w*|demonstrat\w*|rally|rallies|rallied|march(es|ed|ers)?|encampment\w*|riot\w*|unrest|clash\w*|pro-palestin\w*|free palestine|anti-israel\w*|anti-zionis\w*|intifada|from the river to the sea|boycott israel|bds|walkout\w*|sit-in\w*|blockade\w*|mob)\b/i;
+
+/** True when a title reports a protest, riot or rally (independent of its primary category). */
+export function isProtest(title: string): boolean {
+  return PROTEST.test(title);
+}
+
 const RULES: [ActivityCategory, RegExp][] = [
   ["violence", /\b(stab\w*|shot|shoot\w*|assault\w*|attack\w*|beat(en|ing)|punch\w*|arson\w*|firebomb\w*|murder\w*|killed|injur\w*|molotov)\b/i],
   ["threat", /\b(threat\w*|plot\w*|bomb|incite\w*|terror\w*|extremis\w*|jihad\w*)\b/i],
   ["vandalism", /\b(vandal\w*|graffiti|swastika\w*|desecrat\w*|daub\w*|smashed|defaced)\b/i],
   ["harassment", /\b(harass\w*|abuse\w*|abusive|intimidat\w*|spat|slur\w*|bully\w*|hate crime\w*|chant\w*)\b/i],
-  ["protest", /\b(protest\w*|demonstrat\w*|rally|rallies|march\w*|encampment\w*|riot\w*|pro-palestin\w*|blockade\w*)\b/i],
+  ["protest", PROTEST],
   ["security", /\b(police|arrest\w*|security|custody|charged|guard\w*|investigat\w*|probe\w*|probing)\b/i],
   ["travel", /\b(travel\w*|flight\w*|airport\w*|advisory|evacuat\w*)\b/i],
 ];
@@ -98,10 +107,19 @@ const LOCATION_ALIASES: [string, RegExp][] = [
   ["mexico", /\b(mexic\w*)\b/i],
   ["south-africa", /\b(south africa\w*|johannesburg|cape town)\b/i],
   ["new-zealand", /\b(new zealand|auckland|wellington)\b/i],
+  ["czechia", /\b(czech\w*|prague)\b/i],
+  ["greece", /\b(greece|greek|athens)\b/i],
+  ["norway", /\b(norway|norwegian|oslo)\b/i],
+  ["finland", /\b(finland|finnish|helsinki)\b/i],
+  ["romania", /\b(romania\w*|bucharest)\b/i],
+  ["turkey", /\b(turkey|turkish|t[üu]rkiye|istanbul)\b/i],
+  ["india", /\b(india|indian|mumbai|kochi)\b/i],
 ];
 
-/** Resolve a region for headlines filed under "global" by matching place names in the title. */
+/** Resolve the most specific zone: a named city inside the tagged country first, then place names for "global" items. */
 export function resolveRegionSlug(regionSlug: string | null, title: string): string | null {
+  const city = cityFor(regionSlug, title);
+  if (city) return city.slug;
   if (regionSlug && regionSlug !== "global") return regionSlug;
   return LOCATION_ALIASES.find(([, re]) => re.test(title))?.[0] ?? null;
 }
