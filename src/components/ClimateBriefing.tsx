@@ -104,9 +104,9 @@ export function ClimateBriefing({ data }: { data: ClimateData }) {
   return (
     <section className="mt-10 grid gap-6 lg:grid-cols-5" aria-label="Climate briefing">
       <div className="hud-frame border border-border bg-card p-5 lg:col-span-2">
-        <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em] text-foreground">Regions requiring attention</h2>
+        <h2 className="font-display text-sm font-bold uppercase tracking-[0.18em] text-foreground">Most active zones</h2>
         <p className="mt-1 text-xs text-muted-foreground">Ranked by climate score over the last {data.window}.</p>
-        <div className="mt-3"><AttentionList zones={data.zones} /></div>
+        <div className="mt-3"><AttentionList zones={data.leaves ?? data.zones} /></div>
         {data.callouts.length > 0 && (
           <ul className="mt-4 space-y-2 border-t border-border pt-3">
             {data.callouts.map((c) => (

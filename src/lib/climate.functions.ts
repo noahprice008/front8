@@ -8,6 +8,7 @@ import {
   classifyHeadline,
   isProtest,
   isWindow,
+  overallPosture,
   postureFor,
   rollupPosture,
   resolveRegionSlug,
@@ -60,6 +61,8 @@ export interface ClimateData {
   zones: ZoneClimate[];
   /** Areas and cities below the countries, for the map. */
   areas: ZoneClimate[];
+  /** City-level zones (and countries without cities), ranked by score. */
+  leaves: ZoneClimate[];
   stream: ActivityItem[];
   counts: Record<Posture, number>;
   overall: Posture;
@@ -203,10 +206,11 @@ export const getClimate = createServerFn({ method: "GET" })
       };
     };
     const zones: ZoneClimate[] = regions.filter((r) => !r.parent_id && r.covered).map(toZone).sort((x, y) => y.score - x.score);
-    for (const z of zones) counts[z.posture]++;
     const areas: ZoneClimate[] = regions.filter((r) => r.parent_id && r.covered).map(toZone);
-    // Every monitored zone (countries and their cities) counts toward the posture totals.
-    for (const z of areas) counts[z.posture]++;
+    // Each city is its own zone: count leaf zones only (cities, plus countries with no city zones).
+    const hasCoveredKids = (id: string) => (childrenOf.get(id) ?? []).some((k) => k.covered);
+    const leaves: ZoneClimate[] = [...zones, ...areas].filter((z) => !hasCoveredKids(z.regionId)).sort((x, y) => y.score - x.score || y.activityCount - x.activityCount);
+    for (const z of leaves) counts[z.posture]++;
 
     stream.sort((x, y) => new Date(y.publishedAt ?? 0).getTime() - new Date(x.publishedAt ?? 0).getTime());
 
@@ -224,9 +228,9 @@ export const getClimate = createServerFn({ method: "GET" })
     if (rising.length > 0)
       callouts.push(`Activity increasing in ${rising.slice(0, 5).map((z) => z.name).join(", ")}.`);
 
-    const overall: Posture = counts.CRITICAL ? "CRITICAL" : counts.HIGH ? "HIGH" : counts.ELEVATED ? "ELEVATED" : "MONITORED";
+    const overall: Posture = overallPosture(counts);
     return {
-      window: data.window, zones, areas, stream: stream.slice(0, 40), counts, overall,
+      window: data.window, zones, areas, leaves, stream: stream.slice(0, 40), counts, overall,
       totalActivity: zones.reduce((s, z) => s + z.activityCount, 0), callouts,
     };
   });
