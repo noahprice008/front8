@@ -32,7 +32,7 @@ describe("climate rules", () => {
     expect(trendFor(3, 4)).toBe("decreasing");
   });
   it("resolves global headlines by place name", () => {
-    expect(resolveRegionSlug("global", "Woman stabs Jewish man in Midtown NYC")).toBe("united-states");
+    expect(resolveRegionSlug("global", "Woman stabs Jewish man in Midtown NYC")).toBe("new-york-city");
     expect(resolveRegionSlug("france", "anything")).toBe("france");
   });
   it("dedupes the same story from different publishers", () => {

@@ -32,3 +32,7 @@
 - [x] Stripe Checkout (card / Apple Pay / Google Pay) with custom USD amount; PayPal removed
 - [x] Giving copy uses "Contribute", never "Donate"; button line break fixed on mobile
 - [ ] Go live on Stripe — blocked: user is keeping Stripe in test mode for now
+
+# City coverage
+- [x] 116-city catalogue in code; each city gets a map bubble, briefing page, filters and alert/news routing
+- [x] Protests, riots and anti-Israel / Free Palestine rallies tagged on the map, "Protests only" toggle

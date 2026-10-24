@@ -598,3 +598,19 @@ body {
   background: var(--card); color: var(--foreground); border: 1px solid var(--border);
   font: 700 10px/1 var(--font-mono, monospace);
 }
+
+/* Protest / rally activity marker */
+.map-protest-badge {
+  position: absolute; bottom: -6px; left: -6px; z-index: 2;
+  min-width: 18px; height: 18px; padding: 0 4px; border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-sev-high); color: var(--background);
+  border: 1px solid var(--background);
+  font: 700 10px/1 var(--font-mono, monospace);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-sev-high) 35%, transparent);
+}
+.leaflet-bubble-protest {
+  margin: 6px 0 2px; font: 700 0.6875rem/1.3 var(--font-mono, monospace);
+  letter-spacing: 0.04em; color: var(--color-sev-high);
+}
+.map-legend-protest { border-radius: 2px !important; background: var(--color-sev-high); }
