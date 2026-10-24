@@ -22,7 +22,7 @@ import {
   type VerificationFilter,
 } from "./alerts.types";
 import { ACTIVITY_LABELS, classifyHeadline, dedupeKey, isWindow, resolveRegionSlug, WINDOWS, type ActivityCategory } from "./climate";
-import { storyKey } from "./format";
+import { groupAlerts, groupHeadlines } from "./feed-grouping";
 
 const FEED_DELAY_MS = 2 * 60 * 60 * 1000;
 const PAGE_SIZE = 20;
@@ -32,8 +32,9 @@ async function publicClient() {
   return getPublicClient();
 }
 
-interface RawAlertRow {
+export interface RawAlertRow {
   id: string;
+  event_key?: string | null;
   title: string;
   summary: string;
   category: AlertCategory;
@@ -80,9 +81,10 @@ interface PublicSourceRow {
   tier: AlertTier | null;
 }
 
-function mapAlertRow(row: RawAlertRow): AlertListItem {
+export function mapAlertRow(row: RawAlertRow): AlertListItem {
   return {
     id: row.id,
+    eventKey: row.event_key,
     title: row.title,
     summary: row.summary,
     category: row.category,
@@ -151,7 +153,7 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         .limit(1),
       supabase
         .from("alerts")
-        .select("id,title,region_id,severity,verification")
+        .select("id,event_key,title,summary,region_id,severity,verification,published_at")
         .eq("status", "published")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -188,11 +190,17 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
         topByRegion.set(regionId, a.severity);
       }
     };
-    for (const a of (alertsRes.data ?? []) as { id: string; title: string; region_id: string; severity: Severity; verification: string | null }[]) {
-      if (!tree.byId.has(a.region_id)) continue;
-      push(a.region_id, a);
-      // Roll every alert up to all ancestors (country > nation > city).
-      for (const anc of ancestorsOf(tree, a.region_id)) push(anc.id, a);
+    const raw = (alertsRes.data ?? []) as { id: string; event_key: string | null; title: string; summary: string; region_id: string; severity: Severity; verification: string | null; published_at: string | null }[];
+    const grouped = groupAlerts(raw.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: tree.byId.get(a.region_id)?.slug ?? null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), [...tree.byId.values()]);
+    for (const a of grouped) {
+      const targetIds = new Set<string>();
+      for (const slug of a.regionSlugs) {
+        const z = regionRows.find((r) => r.slug === slug);
+        if (!z) continue;
+        targetIds.add(z.id);
+        for (const ancestor of ancestorsOf(tree, z.id)) targetIds.add(ancestor.id);
+      }
+      for (const id of targetIds) push(id, { ...a, title: a.reportCount > 1 ? `${a.title} (${a.reportCount} reports combined)` : a.title });
     }
 
     const regions: MapRegion[] = regionRows.map((row) => ({
@@ -270,55 +278,28 @@ export const listAlerts = createServerFn({ method: "GET" })
     }): Promise<{ items: AlertListItem[]; total: number; page: number; pageSize: number }> => {
       const supabase = await publicClient();
 
-      let query = supabase
-        .from("alerts")
-        .select(
-          "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)",
-          { count: "exact" },
-        )
+      const { data: zoneRows, error: zoneError } = await supabase.from("regions").select("id,name,slug,parent_id").limit(5000);
+      if (zoneError) throw new Error("Could not load alerts.");
+      const zones = (zoneRows ?? []).map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id }));
+      let query = supabase.from("alerts")
+        .select("id,event_key,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)")
         .eq("status", "published");
-
-      query =
-        data.status === "active"
-          ? query.gt("expires_at", new Date().toISOString())
-          : query.lte("expires_at", new Date().toISOString());
-
-      if (data.region) {
-        const { data: regionRows, error: regionErr } = await supabase
-          .from("regions")
-          .select("id,slug,parent_id,name")
-          .limit(5000);
-        if (regionErr) throw new Error("Could not load alerts.");
-        const all = (regionRows ?? []) as { id: string; slug: string; parent_id: string | null; name: string }[];
-        const selected = all.find((r) => r.slug === data.region);
-        const t = buildZoneTree(all.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
-        const ids = selected
-          ? [selected.id, ...descendantsOf(t, selected.id).map((r) => r.id)]
-          : ["00000000-0000-0000-0000-000000000000"];
-        query = query.in("region_id", ids);
-      }
-      if (data.severity) query = query.eq("severity", data.severity);
-      if (data.category) query = query.eq("category", data.category);
-      else query = query.neq("category", "travel_advisory");
-      if (data.tier) query = query.eq("tier", data.tier as AlertTier);
-      if (data.verification) query = query.eq("verification", data.verification);
-
-      const from = data.page * PAGE_SIZE;
-      const { data: rows, error, count } = await query
-        .order("severity", { ascending: false })
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .range(from, from + PAGE_SIZE - 1);
-
+      query = data.status === "active" ? query.gt("expires_at", new Date().toISOString()) : query.lte("expires_at", new Date().toISOString());
+      const { data: rows, error } = await query.order("published_at", { ascending: false, nullsFirst: false }).limit(1000);
       if (error) throw new Error("Could not load alerts.");
-
-      const items = ((rows ?? []) as unknown as RawAlertRow[]).map(mapAlertRow);
-      await attachSources(supabase, items);
-      return {
-        items,
-        total: count ?? 0,
-        page: data.page,
-        pageSize: PAGE_SIZE,
-      };
+      const raw = ((rows ?? []) as unknown as RawAlertRow[]).map(mapAlertRow);
+      await attachSources(supabase, raw);
+      const tree = buildZoneTree(zones);
+      const selected = zones.find((z) => z.slug === data.region);
+      const slugs = selected ? new Set([selected.slug, ...descendantsOf(tree, selected.id).map((z) => z.slug)]) : new Set<string>();
+      const grouped = groupAlerts(raw, zones).filter((a) =>
+        (!data.region || a.regionSlugs.some((slug) => slugs.has(slug))) &&
+        (!data.severity || a.severity === data.severity) &&
+        (data.category ? a.category === data.category : a.category !== "travel_advisory") &&
+        (!data.tier || a.tier === data.tier) && (!data.verification || a.verification === data.verification))
+        .sort((a, b) => SEVERITY_ORDER.indexOf(b.severity) - SEVERITY_ORDER.indexOf(a.severity) || (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
+      const from = data.page * PAGE_SIZE;
+      return { items: grouped.slice(from, from + PAGE_SIZE), total: grouped.length, page: data.page, pageSize: PAGE_SIZE };
     },
   );
 
@@ -365,18 +346,15 @@ export const getLatestAlerts = createServerFn({ method: "GET" })
   }))
   .handler(async ({ data }): Promise<AlertListItem[]> => {
     const supabase = await publicClient();
-    const { data: rows, error } = await supabase
-      .from("alerts")
-      .select(
-        "id,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions!inner(name,slug)",
-      )
-      .eq("status", "published")
-      .gt("expires_at", new Date().toISOString())
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .limit(data.limit);
-
-    if (error) throw new Error("Could not load alerts.");
-    return ((rows ?? []) as unknown as RawAlertRow[]).map(mapAlertRow);
+    const [alertsRes, zonesRes] = await Promise.all([
+      supabase.from("alerts").select("id,event_key,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions!inner(name,slug)")
+        .eq("status", "published").gt("expires_at", new Date().toISOString()).order("published_at", { ascending: false, nullsFirst: false }).limit(1000),
+      supabase.from("regions").select("id,name,slug,parent_id").limit(5000),
+    ]);
+    if (alertsRes.error || zonesRes.error) throw new Error("Could not load alerts.");
+    const items = ((alertsRes.data ?? []) as unknown as RawAlertRow[]).map(mapAlertRow);
+    await attachSources(supabase, items);
+    return groupAlerts(items, (zonesRes.data ?? []).map((z) => ({ ...z, parentId: z.parent_id }))).slice(0, data.limit);
   });
 
 export const getTravelData = createServerFn({ method: "GET" }).handler(
@@ -508,61 +486,35 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
         .eq("kept", true)
         .gt("published_at", since)
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(120),
+        .limit(200),
       supabase
         .from("alerts")
-        .select("id,title,issuing_authority,published_at,verification,regions(name)")
+        .select("id,event_key,title,summary,severity,issuing_authority,published_at,verification,regions(name,slug)")
         .eq("status", "published")
         .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
         .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(10),
-      supabase.from("regions").select("slug,name,covered").limit(1000),
+        .limit(100),
+      supabase.from("regions").select("id,parent_id,slug,name,covered").limit(1000),
       supabase.from("system_settings").select("last_ingest_ok_at").limit(1),
     ]);
 
     if (headlinesRes.error || alertsRes.error) throw new Error("Could not load ticker.");
 
-    const regionRows = (regionsRes.data ?? []) as { slug: string; name: string; covered: boolean }[];
+    const regionRows = (regionsRes.data ?? []) as { id: string; parent_id: string | null; slug: string; name: string; covered: boolean }[];
     const nameOf = new Map(regionRows.map((r) => [r.slug, r.name]));
     const items: TickerItem[] = [];
-    const seenKeys = new Set<string>();
-    for (const h of (headlinesRes.data ?? []) as unknown as HeadlineRow[]) {
-      const k = storyKey(h.title);
-      if (seenKeys.has(k) || items.length >= 60) continue; // rows are newest first, so the newest copy wins
-      seenKeys.add(k);
+    const zones = regionRows.map((r) => ({ ...r, parentId: r.parent_id }));
+    for (const h of groupHeadlines(((headlinesRes.data ?? []) as unknown as HeadlineRow[]).map(mapHeadline), zones).slice(0, 60)) {
       const c = classifyHeadline(h.title);
-      const slug = resolveRegionSlug(h.region_slug, h.title) ?? h.region_slug;
-      items.push({
-        tag: c ? c.category.toUpperCase() : "REPORT",
-        kind: "headline",
-        id: h.id,
-        title: h.title,
-        source: h.publisher,
-        url: h.url,
-        publishedAt: h.published_at,
-        regionName: slug ? (nameOf.get(slug) ?? null) : null,
-        translated: Boolean(h.language && h.language !== "en"),
-      });
+      items.push({ tag: c ? c.category.toUpperCase() : "REPORT", kind: "headline", id: h.id, title: h.title,
+        source: h.publisher, url: h.url, publishedAt: h.publishedAt, regionName: h.regionSlug ? nameOf.get(h.regionSlug) ?? null : null,
+        translated: Boolean(h.language && h.language !== "en"), alsoReportedBy: h.alsoReportedBy });
     }
-    for (const a of (alertsRes.data ?? []) as unknown as {
-      id: string;
-      title: string;
-      issuing_authority: string | null;
-      published_at: string | null;
-      verification: string | null;
-      regions: { name: string } | null;
-    }[]) {
-      items.push({
-        tag: a.verification === "developing" ? "DEVELOPING" : "ALERT",
-        kind: "alert",
-        id: a.id,
-        title: a.title,
-        source: a.issuing_authority,
-        url: `/alerts/${a.id}`,
-        publishedAt: a.published_at,
-        regionName: a.regions?.name ?? null,
-      });
+    const rawAlerts = (alertsRes.data ?? []) as unknown as { id: string; event_key: string | null; title: string; summary: string; severity: Severity; issuing_authority: string | null; published_at: string | null; verification: string | null; regions: { name: string; slug: string } | null }[];
+    for (const a of groupAlerts(rawAlerts.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: a.regions?.slug ?? null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), zones).slice(0, 10)) {
+      items.push({ tag: a.verification === "developing" ? "DEVELOPING" : "ALERT", kind: "alert", id: a.id, title: a.title,
+        source: a.issuing_authority, url: `/alerts/${a.id}`, publishedAt: a.publishedAt, regionName: a.regions?.name ?? null });
     }
     items.sort((x, y) => {
       const tx = x.publishedAt ? new Date(x.publishedAt).getTime() : 0;
@@ -616,76 +568,23 @@ export const listHeadlines = createServerFn({ method: "GET" })
       const days = data.window && isWindow(data.window) ? WINDOWS[data.window] : 14;
       const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-      if (data.activity || data.region) {
-        // Classification and place resolution happen here, so filter in memory.
-        let q2 = supabase
-          .from("headlines")
-          .select(HEADLINE_COLS)
-          .eq("kept", true)
-          .gt("published_at", since);
-        if (data.topic) q2 = q2.eq("topic", data.topic);
-        if (data.lang === "en") q2 = q2.eq("language", "en");
-        if (data.lang === "translated") q2 = q2.neq("language", "en");
-        let zoneSlugs: Set<string> | null = null;
-        if (data.region) {
-          const { data: zr } = await supabase.from("regions").select("id,slug,parent_id,name").limit(5000);
-          const zl = (zr ?? []) as { id: string; slug: string; parent_id: string | null; name: string }[];
-          const zt = buildZoneTree(zl.map((r) => ({ id: r.id, parentId: r.parent_id, name: r.name, slug: r.slug })));
-          const sel = zl.find((r) => r.slug === data.region);
-          zoneSlugs = new Set([data.region, ...(sel ? descendantsOf(zt, sel.id).map((d) => d.slug) : [])]);
-        }
-        const { data: rows, error } = await q2
-          .order("published_at", { ascending: false, nullsFirst: false })
-          .limit(1000);
-        if (error) throw new Error("Could not load headlines.");
-        const seen = new Set<string>();
-        const all = ((rows ?? []) as unknown as HeadlineRow[]).filter((r) => {
-          const k = dedupeKey(r.title);
-          if (seen.has(k)) return false;
-          seen.add(k);
-          const c = classifyHeadline(r.title);
-          if (data.activity === "any" && !c) return false;
-          if (data.activity && data.activity !== "any" && c?.category !== (data.activity as ActivityCategory)) return false;
-          if (data.region) {
-            const slug = resolveRegionSlug(r.region_slug, r.title);
-            if (!zoneSlugs?.has(slug ?? "") && !zoneSlugs?.has(r.region_slug ?? "")) return false;
-          }
-          return true;
-        });
-        const from = data.page * PAGE_SIZE;
-        return {
-          items: all.slice(from, from + PAGE_SIZE).map(mapHeadline),
-          total: all.length,
-          page: data.page,
-          pageSize: PAGE_SIZE,
-        };
-      }
-
-      let query = supabase
-        .from("headlines")
-        .select(HEADLINE_COLS, {
-          count: "exact",
-        })
-        .eq("kept", true)
-        .gt("published_at", since);
-
-      if (data.region) query = query.eq("region_slug", data.region);
-      if (data.topic) query = query.eq("topic", data.topic);
-      if (data.lang === "en") query = query.eq("language", "en");
-      if (data.lang === "translated") query = query.neq("language", "en");
-
+      const [heads, zr] = await Promise.all([
+        supabase.from("headlines").select(HEADLINE_COLS).eq("kept", true).gt("published_at", since)
+          .order("published_at", { ascending: false, nullsFirst: false }).limit(1000),
+        supabase.from("regions").select("id,name,slug,parent_id").limit(5000),
+      ]);
+      if (heads.error || zr.error) throw new Error("Could not load headlines.");
+      const zones = (zr.data ?? []).map((z) => ({ ...z, parentId: z.parent_id }));
+      const tree = buildZoneTree(zones);
+      const selected = zones.find((z) => z.slug === data.region);
+      const slugs = new Set([data.region ?? "", ...(selected ? descendantsOf(tree, selected.id).map((z) => z.slug) : [])]);
+      const all = groupHeadlines(((heads.data ?? []) as unknown as HeadlineRow[]).map(mapHeadline), zones).filter((h) => {
+        const c = classifyHeadline(h.title);
+        return (!data.region || h.regionSlugs.some((slug) => slugs.has(slug))) && (!data.topic || h.topic === data.topic)
+          && (!data.lang || (data.lang === "en" ? h.language === "en" : h.language !== "en"))
+          && (!data.activity || (data.activity === "any" ? Boolean(c) : c?.category === data.activity));
+      });
       const from = data.page * PAGE_SIZE;
-      const { data: rows, error, count } = await query
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .range(from, from + PAGE_SIZE - 1);
-
-      if (error) throw new Error("Could not load headlines.");
-
-      return {
-        items: ((rows ?? []) as unknown as HeadlineRow[]).map(mapHeadline),
-        total: count ?? 0,
-        page: data.page,
-        pageSize: PAGE_SIZE,
-      };
+      return { items: all.slice(from, from + PAGE_SIZE), total: all.length, page: data.page, pageSize: PAGE_SIZE };
     },
   );
