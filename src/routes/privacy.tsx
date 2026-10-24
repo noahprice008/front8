@@ -29,11 +29,13 @@ function PrivacyPage() {
             Minimal analytics
           </h2>
           <p className="mt-2">
-            We may count anonymous page views to know which regions are being
-            checked. These counts contain no identifiers and are not linked
-            to you or your device in a way we could reverse. Filter choices
-            made in the alerts list are stored only in the page address, never
-            on our servers as personal data.
+            Only if you accept the cookie notice, we use Google Analytics
+            cookies to count page visits and see which regions are being
+            checked. We use no advertising features and build no profiles. If
+            you decline, no analytics cookies are set. To change your choice,
+            clear this site's data in your browser and the notice will appear
+            again. Filter choices made in the alerts list are stored only in
+            the page address, never on our servers as personal data.
           </p>
         </section>
 
