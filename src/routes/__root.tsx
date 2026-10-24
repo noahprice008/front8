@@ -136,7 +136,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const { gaId } = Route.useLoaderData();
+  const gaId = Route.useLoaderData()?.gaId ?? null;
 
   return (
     <QueryClientProvider client={queryClient}>
