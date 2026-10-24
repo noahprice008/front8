@@ -136,8 +136,7 @@ export async function attachSources(
 }
 
 /** Regions + latest active alerts + feed status, for the home page map. */
-export const getMapData = createServerFn({ method: "GET" }).handler(
-  async (): Promise<{ regions: MapRegion[]; feed: FeedStatus }> => {
+export async function readMapData(): Promise<{ regions: MapRegion[]; feed: FeedStatus }> {
     const supabase = await publicClient();
 
     const [regionRes, settingsRes, alertsRes, groupRes] = await Promise.all([
@@ -235,8 +234,8 @@ export const getMapData = createServerFn({ method: "GET" }).handler(
     };
 
     return { regions, feed };
-  },
-);
+}
+export const getMapData = createServerFn({ method: "GET" }).handler(() => readMapData());
 
 export interface AlertsFilters {
   region?: string | undefined;

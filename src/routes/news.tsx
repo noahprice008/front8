@@ -7,6 +7,7 @@ import { getMapData, listHeadlines } from "@/lib/alerts.functions";
 import { HEADLINE_TOPIC_LABELS, HEADLINE_TOPICS } from "@/lib/alerts.types";
 import { formatRelative, languageName } from "@/lib/format";
 import { ACTIVITY_CATEGORIES, ACTIVITY_LABELS } from "@/lib/climate";
+import { AlsoReportedBy } from "@/components/AlsoReportedBy";
 
 const mapQuery = queryOptions({
   queryKey: ["map-data"],
@@ -253,6 +254,7 @@ function NewsPage() {
                   )}
                 </div>
               )}
+              <AlsoReportedBy sources={h.alsoReportedBy} />
             </li>
           ))}
         </ul>
