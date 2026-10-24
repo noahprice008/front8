@@ -23,6 +23,7 @@ import {
 } from "./alerts.types";
 import { ACTIVITY_LABELS, classifyHeadline, isWindow, resolveRegionSlug, WINDOWS } from "./climate";
 import { groupAlerts, groupHeadlines } from "./feed-grouping";
+import { CITY_BY_SLUG, withCities } from "./cities";
 
 const FEED_DELAY_MS = 2 * 60 * 60 * 1000;
 const PAGE_SIZE = 20;
@@ -81,6 +82,13 @@ interface PublicSourceRow {
   tier: AlertTier | null;
 }
 
+/** Route an item to the city its title names (inside the tagged country), keeping the original zone otherwise. */
+export function refinedRegion(slug: string, name: string, title: string): { regionSlug: string; regionName: string } {
+  const refined = resolveRegionSlug(slug || null, title);
+  const city = refined ? CITY_BY_SLUG.get(refined) : undefined;
+  return city && refined !== slug ? { regionSlug: city.slug, regionName: city.name } : { regionSlug: slug, regionName: name };
+}
+
 export function mapAlertRow(row: RawAlertRow): AlertListItem {
   return {
     id: row.id,
@@ -95,8 +103,7 @@ export function mapAlertRow(row: RawAlertRow): AlertListItem {
     publishedAt: row.published_at,
     expiresAt: row.expires_at,
     lastReviewedAt: row.last_reviewed_at,
-    regionName: row.regions?.name ?? "",
-    regionSlug: row.regions?.slug ?? "",
+    ...refinedRegion(row.regions?.slug ?? "", row.regions?.name ?? "", row.title),
     verification: row.verification === "developing" ? "developing" : "confirmed",
   };
 }
@@ -284,7 +291,7 @@ export const listAlerts = createServerFn({ method: "GET" })
 
       const { data: zoneRows, error: zoneError } = await supabase.from("regions").select("id,name,slug,parent_id").limit(5000);
       if (zoneError) throw new Error("Could not load alerts.");
-      const zones = (zoneRows ?? []).map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id }));
+      const zones = withCities((zoneRows ?? []).map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id })));
       let query = supabase.from("alerts")
         .select("id,event_key,title,summary,category,severity,tier,issuing_authority,auto_published,published_at,expires_at,last_reviewed_at,verification,regions(name,slug)")
         .eq("status", "published");
@@ -358,7 +365,7 @@ export const getLatestAlerts = createServerFn({ method: "GET" })
     if (alertsRes.error || zonesRes.error) throw new Error("Could not load alerts.");
     const items = ((alertsRes.data ?? []) as unknown as RawAlertRow[]).map(mapAlertRow);
     await attachSources(supabase, items);
-    return groupAlerts(items, (zonesRes.data ?? []).map((z) => ({ ...z, parentId: z.parent_id }))).slice(0, data.limit);
+    return groupAlerts(items, withCities((zonesRes.data ?? []).map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id })))).slice(0, data.limit);
   });
 
 export const getTravelData = createServerFn({ method: "GET" }).handler(
@@ -506,9 +513,9 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
     if (headlinesRes.error || alertsRes.error) throw new Error("Could not load ticker.");
 
     const regionRows = (regionsRes.data ?? []) as { id: string; parent_id: string | null; slug: string; name: string; covered: boolean }[];
-    const nameOf = new Map(regionRows.map((r) => [r.slug, r.name]));
+    const zones = withCities(regionRows.map((r) => ({ id: r.id, slug: r.slug, name: r.name, parentId: r.parent_id })));
+    const nameOf = new Map(zones.map((r) => [r.slug, r.name]));
     const items: TickerItem[] = [];
-    const zones = regionRows.map((r) => ({ ...r, parentId: r.parent_id }));
     for (const h of groupHeadlines(((headlinesRes.data ?? []) as unknown as HeadlineRow[]).map(mapHeadline), zones).slice(0, 60)) {
       const c = classifyHeadline(h.title);
       items.push({ tag: c ? c.category.toUpperCase() : "REPORT", kind: "headline", id: h.id, title: h.title,
@@ -516,9 +523,9 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
         translated: Boolean(h.language && h.language !== "en"), alsoReportedBy: h.alsoReportedBy });
     }
     const rawAlerts = (alertsRes.data ?? []) as unknown as { id: string; event_key: string | null; title: string; summary: string; severity: Severity; issuing_authority: string | null; published_at: string | null; verification: string | null; regions: { name: string; slug: string } | null }[];
-    for (const a of groupAlerts(rawAlerts.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: a.regions?.slug ?? null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), zones).slice(0, 10)) {
+    for (const a of groupAlerts(rawAlerts.map((a) => ({ ...a, eventKey: a.event_key, publishedAt: a.published_at, regionSlug: refinedRegion(a.regions?.slug ?? "", a.regions?.name ?? "", a.title).regionSlug || null, verification: a.verification === "developing" ? "developing" as const : "confirmed" as const })), zones).slice(0, 10)) {
       items.push({ tag: a.verification === "developing" ? "DEVELOPING" : "ALERT", kind: "alert", id: a.id, title: a.title,
-        source: a.issuing_authority, url: `/alerts/${a.id}`, publishedAt: a.publishedAt, regionName: a.regions?.name ?? null });
+        source: a.issuing_authority, url: `/alerts/${a.id}`, publishedAt: a.publishedAt, regionName: (a.regionSlug ? nameOf.get(a.regionSlug) : null) ?? a.regions?.name ?? null });
     }
     items.sort((x, y) => {
       const tx = x.publishedAt ? new Date(x.publishedAt).getTime() : 0;
@@ -578,7 +585,7 @@ export const listHeadlines = createServerFn({ method: "GET" })
         supabase.from("regions").select("id,name,slug,parent_id").limit(5000),
       ]);
       if (heads.error || zr.error) throw new Error("Could not load headlines.");
-      const zones = (zr.data ?? []).map((z) => ({ ...z, parentId: z.parent_id }));
+      const zones = withCities((zr.data ?? []).map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id })));
       const tree = buildZoneTree(zones);
       const selected = zones.find((z) => z.slug === data.region);
       const slugs = new Set([data.region ?? "", ...(selected ? descendantsOf(tree, selected.id).map((z) => z.slug) : [])]);
