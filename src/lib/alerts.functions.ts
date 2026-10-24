@@ -497,11 +497,11 @@ function mapHeadline(row: HeadlineRow): Headline {
   };
 }
 
-/** Ticker feed: newest 60 kept headlines from the last 72 hours (one per story) plus a few confirmed alerts. */
+/** Ticker feed: 20 newest items (headlines and alerts) from the last 24 hours, one per story. */
 export const getTickerItems = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ items: TickerItem[]; zones: number; lastIngestOkAt: string | null }> => {
     const supabase = await publicClient();
-    const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const [headlinesRes, alertsRes, regionsRes, settingsRes] = await Promise.all([
       supabase
@@ -517,6 +517,7 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
         .eq("status", "published")
         .neq("category", "travel_advisory")
         .gt("expires_at", new Date().toISOString())
+        .gt("published_at", since)
         .order("published_at", { ascending: false, nullsFirst: false })
         .limit(100),
       supabase.from("regions").select("id,parent_id,slug,name,covered").limit(1000),
@@ -547,7 +548,7 @@ export const getTickerItems = createServerFn({ method: "GET" }).handler(
     });
     const settings = ((settingsRes.data ?? []) as { last_ingest_ok_at: string | null }[])[0];
     return {
-      items,
+      items: items.slice(0, 20),
       zones: regionRows.filter((r) => r.covered).length,
       lastIngestOkAt: settings?.last_ingest_ok_at ?? null,
     };

@@ -84,7 +84,7 @@ function TravelPage() {
           <p className="mt-3 text-sm text-muted-foreground">No reports in this area yet.</p>
         ) : (
           <>
-          <details className="mt-3 border border-border bg-card sm:hidden">
+          <details className="mt-3 border border-border bg-card">
             <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm font-medium text-foreground">
               <span>{zones.length} destinations</span>
               <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">
@@ -102,23 +102,7 @@ function TravelPage() {
               ))}
             </ul>
           </details>
-          <div className="mt-3 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-            {zones.map((z) => (
-              <Link key={z.slug} to="/region/$slug" params={{ slug: z.slug }} className="flex flex-col gap-2 border border-border bg-card p-4 hover:bg-accent/40">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-display text-base font-semibold text-foreground">{z.name}</span>
-                  {z.activeAlerts > 0 && z.topSeverity ? <SeverityBadge severity={z.topSeverity} size="sm" /> : <span className="text-xs text-muted-foreground">No incidents</span>}
-                </div>
-                <span className="font-mono text-[0.6875rem] uppercase tracking-wider text-muted-foreground">{z.activeAlerts} active alert{z.activeAlerts === 1 ? "" : "s"}</span>
-                {z.latestHeadline ? (
-                  <span className="line-clamp-2 text-sm text-foreground">{z.latestHeadline.title} <span className="text-xs text-muted-foreground">· {formatRelative(z.latestHeadline.publishedAt)}</span></span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">No recent headlines.</span>
-                )}
-              </Link>
-            ))}
-          </div>
-          </>
+                    </>
         )}
       </section>
 
