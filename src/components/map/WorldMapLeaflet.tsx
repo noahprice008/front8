@@ -134,7 +134,6 @@ export default function WorldMapClient({ regions, feedDelay, climate }: { region
       map.on("mousemove", (e) => setCursor(`${e.latlng.lat.toFixed(3)}°, ${e.latlng.lng.toFixed(3)}°`));
       map.on("mouseout", () => setCursor("--"));
 
-      const DETAIL_ZOOM = 5;
       (window as unknown as { L: typeof L }).L = L;
       await import("leaflet.markercluster");
       if (cancelled) return;
