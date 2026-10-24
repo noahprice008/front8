@@ -9,6 +9,7 @@ import {
   isProtest,
   isWindow,
   postureFor,
+  rollupPosture,
   resolveRegionSlug,
   scoreZone,
   trendFor,
