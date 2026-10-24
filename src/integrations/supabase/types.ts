@@ -192,6 +192,24 @@ export type Database = {
         }
         Relationships: []
       }
+      headline_gate_rules: {
+        Row: {
+          id: number
+          kind: string
+          pattern: string
+        }
+        Insert: {
+          id?: never
+          kind: string
+          pattern: string
+        }
+        Update: {
+          id?: never
+          kind?: string
+          pattern?: string
+        }
+        Relationships: []
+      }
       headlines: {
         Row: {
           created_at: string
@@ -758,6 +776,7 @@ export type Database = {
       critical_watch: { Args: never; Returns: Json }
       ensure_publisher_source: { Args: { p_name: string }; Returns: string }
       gdelt_region_groups: { Args: { p_size?: number }; Returns: Json }
+      headline_passes_gate: { Args: { p_title: string }; Returns: boolean }
       headlines_unseen: { Args: { p_articles: Json }; Returns: Json }
       incident_work: { Args: { p_limit?: number }; Returns: Json }
       ingest_headline: {
@@ -800,18 +819,30 @@ export type Database = {
         Returns: undefined
       }
       mark_ingest_ok: { Args: { p_feed_url: string }; Returns: undefined }
+      merge_duplicate_alerts: {
+        Args: {
+          p_dry_run?: boolean
+          p_threshold?: number
+          p_window_hours?: number
+        }
+        Returns: Json
+      }
       news_item_seen: {
         Args: { p_payload: Json; p_url: string }
         Returns: Json
       }
       news_query_plan: { Args: never; Returns: Json }
       open_event_list: { Args: never; Returns: Json }
+      region_ancestors: { Args: { p_region: string }; Returns: string[] }
       require_service_role: { Args: never; Returns: undefined }
       social_apply: { Args: { p_rows: Json }; Returns: Json }
       social_plan: { Args: never; Returns: Json }
       social_store: { Args: { p_rows: Json }; Returns: Json }
       social_work: { Args: { p_limit?: number }; Returns: Json }
       store_headlines: { Args: { p_rows: Json }; Returns: Json }
+      title_tokens: { Args: { p: string }; Returns: string[] }
+      token_overlap: { Args: { a: string; b: string }; Returns: number }
+      token_similarity: { Args: { a: string; b: string }; Returns: number }
       translation_work: { Args: { p_limit?: number }; Returns: Json }
     }
     Enums: {
