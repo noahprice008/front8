@@ -55,8 +55,9 @@ export function MapLegend() {
           ))}
         </ul>
         <p className="mt-2 border-t border-border pt-2 text-[0.6875rem] leading-relaxed text-muted-foreground">
-          Bubble numbers are incident alerts, or activity reports when no
-          alert is active. Activity is reported, not a confirmed direct
+          Group numbers count zones; group colour shows the highest active
+          alert severity. Individual bubbles count incident alerts, or activity
+          reports when no alert is active. Activity is reported, not a confirmed direct
           threat. No reports does not guarantee safety.
         </p>
       </div>
