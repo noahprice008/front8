@@ -95,6 +95,22 @@ export function markerStyleFor(region: {
   return "clear";
 }
 
+/** Cluster colour is based only on active alerts, never the number of cities or climate reports. */
+export function clusterAlertStatus(regions: { activeAlerts: number; topSeverity: Severity | null }[]): {
+  activeAlerts: number; topSeverity: Severity | null; style: MarkerStyle;
+} {
+  let activeAlerts = 0;
+  let topSeverity: Severity | null = null;
+  for (const region of regions) {
+    if (region.activeAlerts <= 0) continue;
+    activeAlerts += region.activeAlerts;
+    if (region.topSeverity && (!topSeverity || topSeverityRank(region.topSeverity) > topSeverityRank(topSeverity))) {
+      topSeverity = region.topSeverity;
+    }
+  }
+  return { activeAlerts, topSeverity, style: markerStyleFor({ covered: true, activeAlerts, topSeverity }) };
+}
+
 export interface MapRegion {
   id: string;
   parentId: string | null;

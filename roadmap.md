@@ -36,3 +36,5 @@
 # City coverage
 - [x] 116-city catalogue in code; each city gets a map bubble, briefing page, filters and alert/news routing
 - [x] Protests, riots and anti-Israel / Free Palestine rallies tagged on the map, "Protests only" toggle
+- [x] Expand Israeli travel destinations to 42 using existing covered zones, including South Africa.
+- [x] Colour grouped city markers by the highest active alert severity and verify destination links.

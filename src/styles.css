@@ -587,7 +587,6 @@ body {
 .map-cluster {
   display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: 9999px;
-  background: color-mix(in oklab, var(--primary) 85%, transparent);
   color: var(--primary-foreground); border: 2px solid var(--background);
   font: 700 11px/1 var(--font-mono, monospace);
 }

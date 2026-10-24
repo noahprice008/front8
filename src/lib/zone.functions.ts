@@ -5,6 +5,7 @@ import { readMapData, attachSources, refinedRegion } from "./alerts.functions";
 import { isVirtualZoneId, withCities } from "./cities";
 import { resolveRegionSlug } from "./climate";
 import { ancestorsOf, buildZoneTree, bySeverityThenName, descendantsOf, rollupStatus } from "./zones";
+import { isTravelDestination } from "./travel-destinations";
 
 async function publicClient() {
   const { getPublicClient } = await import("@/lib/supabase-public.server");
@@ -153,17 +154,18 @@ export const getTravelZones = createServerFn({ method: "GET" }).handler(async ()
   if (zonesRes.error) throw new Error("Could not load travel zones.");
   type R = { id: string; name: string; slug: string; parent_id: string | null; zone_group: string | null };
   const rows = (zonesRes.data ?? []) as R[];
-  const zl = rows.map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id }));
+  const zl = withCities(rows.map((z) => ({ id: z.id, name: z.name, slug: z.slug, parentId: z.parent_id })));
   const tree = buildZoneTree(zl);
-  const travel = rows.filter((r) => r.zone_group === "travel");
+  const travel = rows.filter(isTravelDestination);
   const slugsOf = new Map(travel.map((t) => [t.id, [t.slug, ...descendantsOf(tree, t.id).map((d) => d.slug)]]));
   const allSlugs = [...new Set([...slugsOf.values()].flat())];
   const { data: heads } = allSlugs.length
     ? await supabase.from("headlines").select("id,title,url,publisher,published_at,region_slug").eq("kept", true)
-        .in("region_slug", allSlugs).order("published_at", { ascending: false, nullsFirst: false }).limit(1000)
+        .in("region_slug", [...allSlugs, "global"]).order("published_at", { ascending: false, nullsFirst: false }).limit(1000)
     : { data: [] };
   const newest = new Map<string, { title: string; url: string; publishedAt: string | null }>();
-  const mappedHeads = ((heads ?? []) as { id: string; title: string; url: string; publisher: string | null; published_at: string | null; region_slug: string }[]).map((h) => ({ ...h, regionSlug: h.region_slug, publishedAt: h.published_at }));
+  const mappedHeads = ((heads ?? []) as { id: string; title: string; url: string; publisher: string | null; published_at: string | null; region_slug: string }[]).map((h) => ({ ...h, regionSlug: resolveRegionSlug(h.region_slug, h.title) ?? h.region_slug, publishedAt: h.published_at }))
+    .filter((h) => allSlugs.includes(h.regionSlug));
   for (const h of groupHeadlines(mappedHeads, zl)) for (const slug of h.regionSlugs)
     if (!newest.has(slug)) newest.set(slug, { title: h.title, url: h.url, publishedAt: h.publishedAt });
   return travel
