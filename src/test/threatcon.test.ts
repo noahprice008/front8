@@ -35,6 +35,9 @@ describe("Threatcon posture levels", () => {
   it("still reports the higher postures unchanged", () => {
     expect(
       computeThreatcon([zone({ id: "uk", activeAlerts: 1, topSeverity: "critical" })]).level,
+    ).toBe("HIGH");
+    expect(
+      computeThreatcon(["a", "b", "c", "d", "e"].map((id) => zone({ id, activeAlerts: 1, topSeverity: "critical" }))).level,
     ).toBe("CRITICAL");
     expect(
       computeThreatcon([zone({ id: "uk", activeAlerts: 1, topSeverity: "high" })]).level,

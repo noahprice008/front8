@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyHeadline, dedupeKey, postureFor, resolveRegionSlug, trendFor } from "@/lib/climate";
+import { classifyHeadline, dedupeKey, overallPosture, postureFor, resolveRegionSlug, trendFor } from "@/lib/climate";
 
 describe("climate rules", () => {
   it("classifies a protest headline as protest", () => {
@@ -16,15 +16,26 @@ describe("climate rules", () => {
   it("activity alone never makes a zone CRITICAL", () => {
     expect(postureFor({ activityWeights: Array(20).fill(5), alertSeverities: [], developingCount: 0 })).toBe("HIGH");
   });
+  it("uses thresholds elevated 8, high 30, protest weight 5", () => {
+    expect(classifyHeadline("Pro-Palestinian protest in Paris")?.weight).toBe(5);
+    expect(postureFor({ activityWeights: [4, 3], alertSeverities: [], developingCount: 0 })).toBe("MONITORED");
+    expect(postureFor({ activityWeights: [5, 3], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
+    expect(postureFor({ activityWeights: [10, 10, 9], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
+    expect(postureFor({ activityWeights: [10, 10, 10], alertSeverities: [], developingCount: 0 })).toBe("HIGH");
+  });
+  it("global THREATCON needs 5 critical zones", () => {
+    expect(overallPosture({ CRITICAL: 4, HIGH: 0, ELEVATED: 0, MONITORED: 0 })).toBe("HIGH");
+    expect(overallPosture({ CRITICAL: 5, HIGH: 0, ELEVATED: 0, MONITORED: 0 })).toBe("CRITICAL");
+  });
   it("two reports alone never reach HIGH", () => {
-    expect(postureFor({ activityWeights: [7, 7], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
+    expect(postureFor({ activityWeights: [15, 15], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
   });
   it("a confirmed critical alert makes a zone CRITICAL", () => {
     expect(postureFor({ activityWeights: [], alertSeverities: ["critical"], developingCount: 0 })).toBe("CRITICAL");
   });
-  it("score 4 is ELEVATED, below is MONITORED", () => {
-    expect(postureFor({ activityWeights: [2, 2], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
-    expect(postureFor({ activityWeights: [2, 1], alertSeverities: [], developingCount: 0 })).toBe("MONITORED");
+  it("score 8 is ELEVATED, below is MONITORED", () => {
+    expect(postureFor({ activityWeights: [4, 4], alertSeverities: [], developingCount: 0 })).toBe("ELEVATED");
+    expect(postureFor({ activityWeights: [4, 3], alertSeverities: [], developingCount: 0 })).toBe("MONITORED");
   });
   it("trend uses a ±25% band", () => {
     expect(trendFor(5, 4)).toBe("increasing");

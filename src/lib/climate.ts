@@ -29,7 +29,7 @@ export const ACTIVITY_WEIGHTS: Record<ActivityCategory, number> = {
   threat: 4,
   vandalism: 3,
   harassment: 2,
-  protest: 2,
+  protest: 5,
   security: 1,
   travel: 1,
 };
@@ -131,7 +131,7 @@ const ALERT_POINTS: Record<Severity, number> = { info: 0, low: 1, moderate: 3, h
 export const DEVELOPING_POINTS = 2;
 
 /** Score thresholds. Activity alone can raise a zone to HIGH but never to CRITICAL. */
-export const THRESHOLDS = { elevated: 4, high: 20, critical: 30 };
+export const THRESHOLDS = { elevated: 8, high: 30, critical: 50 };
 /** Activity alone needs at least this many separate reports to reach HIGH. */
 export const MIN_REPORTS_FOR_HIGH = 3;
 
@@ -157,6 +157,16 @@ export function postureFor(z: ZoneInputs): Posture {
   if (hasHigh || (score >= THRESHOLDS.high && z.activityWeights.length >= MIN_REPORTS_FOR_HIGH)) return "HIGH";
   if (score >= THRESHOLDS.elevated || z.alertSeverities.includes("moderate")) return "ELEVATED";
   return "MONITORED";
+}
+
+/** Global THREATCON turns CRITICAL only when at least this many zones are CRITICAL. */
+export const MIN_CRITICAL_ZONES_GLOBAL = 5;
+
+/** Global posture from zone counts; fewer critical zones than the minimum count as HIGH. */
+export function overallPosture(counts: Record<Posture, number>): Posture {
+  if (counts.CRITICAL >= MIN_CRITICAL_ZONES_GLOBAL) return "CRITICAL";
+  if (counts.CRITICAL > 0 || counts.HIGH > 0) return "HIGH";
+  return counts.ELEVATED > 0 ? "ELEVATED" : "MONITORED";
 }
 
 const POSTURE_RANK: Record<Posture, number> = { MONITORED: 0, ELEVATED: 1, HIGH: 2, CRITICAL: 3 };

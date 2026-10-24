@@ -15,9 +15,9 @@ export function computeThreatcon(regions: MapRegion[]) {
     else if (rank === 2) counts.ELEVATED++;
     else counts.MONITORED++;
   }
-  const level: ThreatconLevel = counts.CRITICAL
+  const level: ThreatconLevel = counts.CRITICAL >= 5
     ? "CRITICAL"
-    : counts.HIGH
+    : counts.CRITICAL || counts.HIGH
       ? "HIGH"
       : counts.ELEVATED
         ? "ELEVATED"
