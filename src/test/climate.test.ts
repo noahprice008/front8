@@ -39,3 +39,16 @@ describe("climate rules", () => {
     expect(dedupeKey("French Jews forced into hiding – Fox News")).toBe(dedupeKey("French Jews forced into hiding"));
   });
 });
+
+import { rollupPosture } from "@/lib/climate";
+describe("country roll-up", () => {
+  it("takes the most serious city instead of summing cities", () => {
+    expect(rollupPosture("MONITORED", ["ELEVATED", "MONITORED", "MONITORED"])).toBe("ELEVATED");
+  });
+  it("many monitored cities keep the country monitored", () => {
+    expect(rollupPosture("MONITORED", Array(30).fill("MONITORED"))).toBe("MONITORED");
+  });
+  it("a critical city still makes the country critical", () => {
+    expect(rollupPosture("MONITORED", ["CRITICAL"])).toBe("CRITICAL");
+  });
+});
